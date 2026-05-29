@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mando Juez - HS Taekwondo</title>
+    <style>
+        body { 
+            background: #111; 
+            color: white; 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
+            margin: 0; 
+            padding: 6px; 
+            height: 100vh; 
+            box-sizing: border-box; 
+            display: flex; 
+            flex-direction: column; 
+            user-select: none; 
+            -webkit-user-select: none; 
+            touch-action: manipulation;
+        }
+        .titulo { 
+            text-align: center; 
+            font-size: 13px; 
+            font-weight: bold; 
+            padding: 6px 0; 
+            color: #ffcc00; 
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .lado { 
+            flex: 1; 
+            display: flex; 
+            gap: 6px; 
+            padding: 6px; 
+            border-radius: 10px; 
+            margin-bottom: 6px; 
+        }
+        .azul { background: #0033aa; border: 1px solid #0055ff; } 
+        .rojo { background: #aa1111; border: 1px solid #ff3333; }
+        
+        button { 
+            flex: 1; 
+            border: none; 
+            color: white; 
+            font-size: 16px; 
+            font-weight: bold; 
+            border-radius: 8px; 
+            background: rgba(255,255,255,0.18); 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            -webkit-tap-highlight-color: transparent; 
+            transition: background 0.05s ease;
+        }
+        button:active { 
+            background: rgba(255,255,255,0.4); 
+        }
+        .btn-texto-sub {
+            font-size: 11px;
+            font-weight: normal;
+            opacity: 0.8;
+            display: block;
+            margin-top: 4px;
+        }
+    </style>
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+
+    <div class="titulo">Mando Interactivo: JUEZ 1</div>
+
+    <div class="lado azul">
+        <button onclick="enviarPunto('azul', 'puno')">
+            PUÑO
+            <span class="btn-texto-sub">+1 Punto</span>
+        </button>
+        <button onclick="enviarPunto('azul', 'peto')">
+            PETO
+            <span class="btn-texto-sub">+2 Puntos</span>
+        </button>
+        <button onclick="enviarPunto('azul', 'cabeza')">
+            CAB.
+            <span class="btn-texto-sub">+3 Puntos</span>
+        </button>
+    </div>
+
+    <div class="lado rojo" style="margin-bottom: 0;">
+        <button onclick="enviarPunto('rojo', 'puno')">
+            PUÑO
+            <span class="btn-texto-sub">+1 Punto</span>
+        </button>
+        <button onclick="enviarPunto('rojo', 'peto')">
+            PETO
+            <span class="btn-texto-sub">+2 Puntos</span>
+        </button>
+        <button onclick="enviarPunto('rojo', 'cabeza')">
+            CAB.
+            <span class="btn-texto-sub">+3 Puntos</span>
+        </button>
+    </div>
+
+    <script>
+        const socket = io();
+        
+        // Identificador del juez. Cuando conectes más celulares, 
+        // a este archivo le puedes cambiar el ID a 2 o 3 si lo deseas.
+        const JUEZ_ID = 1; 
+
+        function enviarPunto(competidor, tecnica) {
+            socket.emit('clickJuez', {
+                juezId: JUEZ_ID,
+                competidor: competidor,
+                tecnica: tecnica
+            });
+        }
+    </script>
+</body>
+</html>

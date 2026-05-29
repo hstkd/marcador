@@ -32,22 +32,51 @@
         }
         .panel-config {
             background: #333;
-            padding: 10px;
+            padding: 12px;
             border-radius: 8px;
             margin-bottom: 12px;
             display: flex;
-            gap: 10px;
-            justify-content: center;
+            flex-direction: column;
+            gap: 8px;
             align-items: center;
         }
-        .panel-config select {
+        .config-row {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+        }
+        .config-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .panel-config input {
             background: #222;
-            color: #fff;
+            color: #ffcc00;
             border: 1px solid #555;
             padding: 6px;
             border-radius: 4px;
-            font-size: 13px;
+            font-size: 14px;
+            font-weight: bold;
+            width: 45px;
+            text-align: center;
+            font-family: monospace;
         }
+        .btn-aplicar {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 6px 15px;
+            font-size: 12px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 4px;
+        }
+        .btn-aplicar:active { background: #0056b3; }
+        
         #tiempo { 
             font-size: 55px; 
             font-weight: bold; 
@@ -152,23 +181,25 @@
     <div class="header">HENRY SIGCHOS TAEKWONDO</div>
 
     <div id="panel-configuracion" class="panel-config">
-        <div>
-            <label style="font-size:11px; display:block; margin-bottom:2px;">ROUND:</label>
-            <select id="cfg-round" onchange="aplicarConfiguracion()">
-                <option value="120">2:00 Min (Oficial)</option>
-                <option value="90">1:30 Min (Pre-Cad)</option>
-                <option value="60">1:00 Min (Infantil)</option>
-                <option value="10">0:10 Seg (Prueba)</option>
-            </select>
+        <div class="config-row">
+            <div>
+                <label style="font-size:11px; display:block; margin-bottom:2px; font-weight:bold;">TIEMPO ROUND:</label>
+                <div class="config-group">
+                    <input type="number" id="cfg-round-min" value="2" min="0" max="9" placeholder="Min">
+                    <span>:</span>
+                    <input type="number" id="cfg-round-seg" value="00" min="0" max="59" placeholder="Seg">
+                </div>
+            </div>
+            <div>
+                <label style="font-size:11px; display:block; margin-bottom:2px; font-weight:bold;">TIEMPO DESCANSO:</label>
+                <div class="config-group">
+                    <input type="number" id="cfg-descanso-min" value="1" min="0" max="9" placeholder="Min">
+                    <span>:</span>
+                    <input type="number" id="cfg-descanso-seg" value="00" min="0" max="59" placeholder="Seg">
+                </div>
+            </div>
         </div>
-        <div>
-            <label style="font-size:11px; display:block; margin-bottom:2px;">DESCANSO:</label>
-            <select id="cfg-descanso" onchange="aplicarConfiguracion()">
-                <option value="60">1:00 Min (Oficial)</option>
-                <option value="45">0:45 Seg</option>
-                <option value="30">0:30 Seg</option>
-            </select>
-        </div>
+        <button class="btn-aplicar" onclick="aplicarConfiguracion()">Establecer Tiempos</button>
     </div>
     
     <div class="panel-central">
@@ -286,16 +317,27 @@
         });
 
         function aplicarConfiguracion() {
-            const tRound = document.getElementById('cfg-round').value;
-            const tDescanso = document.getElementById('cfg-descanso').value;
-            socket.emit('configurarTiempos', { tiempoRound: tRound, tiempoDescanso: tDescanso });
+            const rMin = parseInt(document.getElementById('cfg-round-min').value) || 0;
+            const rSeg = parseInt(document.getElementById('cfg-round-seg').value) || 0;
+            const dMin = parseInt(document.getElementById('cfg-descanso-min').value) || 0;
+            const dSeg = parseInt(document.getElementById('cfg-descanso-seg').value) || 0;
+
+            const totalRoundSegundos = (rMin * 60) + rSeg;
+            const totalDescansoSegundos = (dMin * 60) + dSeg;
+
+            if (totalRoundSegundos <= 0) {
+                alert("El tiempo de round debe ser mayor a 0 segundos.");
+                return;
+            }
+
+            socket.emit('configurarTiempos', { 
+                tiempoRound: totalRoundSegundos, 
+                tiempoDescanso: totalDescansoSegundos 
+            });
         }
 
         function controlTiempo() { socket.emit('toggleTiempo'); }
-        
-        // AQUÍ ESTÁ LA CORRECCIÓN CLAVE: de 'quantity' a 'cantidad'
         function sumarMesa(comp, cant) { socket.emit('modificarMesa', {competidor: comp, cantidad: cant}); }
-        
         function gamjeom(comp) { socket.emit('gamjeomMesa', {competidor: comp}); }
         function reiniciarTodo() { socket.emit('reiniciarTodo'); }
     </script>

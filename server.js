@@ -11,12 +11,12 @@ let estado = {
     roundsAzul: 0, roundsRojo: 0,
     roundActual: 1,
     tiempoRestante: 120,
-    tiempoConfiguradoRound: 120,
-    tiempoConfiguradoDescanso: 60,
+    tiempoConfiguradoRound: 120,      // Variable dinámica
+    tiempoConfiguradoDescanso: 60,    // Variable dinámica
     corriendo: false,
     enDescanso: false,
-    ganadorRound: null,      // 'azul' o 'rojo' al terminar el round
-    ganadorCombate: null     // 'azul' o 'rojo' al ganar 2 rounds
+    ganadorRound: null,
+    ganadorCombate: null
 };
 
 const VALOR_PUNTOS = { 'puno': 1, 'peto': 2, 'cabeza': 3 };
@@ -30,8 +30,21 @@ io.on('connection', (socket) => {
         io.emit('actualizar', estado);
     });
 
+    // CONFIGURAR TIEMPOS DESDE LA MESA
+    socket.on('configurarTiempos', (datos) => {
+        if (estado.corriendo || estado.roundActual > 1 || estado.puntosAzul > 0 || estado.puntosRojo > 0) {
+            // Solo permite configurar si el combate no ha iniciado realmente
+            return;
+        }
+        estado.tiempoConfiguradoRound = parseInt(datos.tiempoRound);
+        estado.tiempoConfiguradoDescanso = parseInt(datos.tiempoDescanso);
+        estado.tiempoRestante = estado.tiempoConfiguradoRound;
+        io.emit('actualizar', estado);
+    });
+
+    // MODIFICADORES MANUALES (SOLO FUNCIONAN SI ESTÁ PAUSADO)
     socket.on('modificarMesa', (datos) => {
-        if (!estado.corriendo || estado.enDescanso || estado.ganadorCombate) return;
+        if (estado.corriendo || estado.ganadorCombate) return; // REGLA: Bloqueado si está corriendo
         if (datos.competidor === 'azul') estado.puntosAzul += datos.cantidad;
         else estado.puntosRojo += datos.cantidad;
         revisarReglasDeVictoria();
@@ -39,7 +52,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('gamjeomMesa', (datos) => {
-        if (!estado.corriendo || estado.enDescanso || estado.ganadorCombate) return;
+        if (estado.corriendo || estado.ganadorCombate) return; // REGLA: Bloqueado si está corriendo
         if (datos.competidor === 'azul') {
             estado.gamjeomAzul++; estado.puntosRojo += 1;
         } else {
@@ -49,6 +62,7 @@ io.on('connection', (socket) => {
         io.emit('actualizar', estado);
     });
 
+    // JUECES DE ESQUINA (ELLOS SÍ SUMAN EN VIVO MIENTRAS CORRE EL TIEMPO)
     socket.on('clickJuez', (datos) => {
         if (!estado.corriendo || estado.enDescanso || estado.ganadorCombate) return;
         
@@ -60,7 +74,6 @@ io.on('connection', (socket) => {
         io.emit('actualizar', estado);
     });
 
-    // Botón extra por si quieres reiniciar todo manualmente desde la mesa
     socket.on('reiniciarTodo', () => {
         reiniciarCombate();
         io.emit('actualizar', estado);
@@ -89,7 +102,7 @@ function revisarReglasDeVictoria() {
 function evaluarGanadorRound() {
     if (estado.puntosAzul > estado.puntosRojo) registrarGanadorRound('azul');
     else if (estado.puntosRojo > estado.puntosAzul) registrarGanadorRound('rojo');
-    else registrarGanadorRound('empate'); // En tu academia puedes definir superioridad manual si deseas
+    else registrarGanadorRound('empate');
 }
 
 function registrarGanadorRound(ganador) {
@@ -99,13 +112,11 @@ function registrarGanadorRound(ganador) {
     if (ganador === 'azul') estado.roundsAzul++;
     if (ganador === 'rojo') estado.roundsRojo++;
 
-    // Verificar si ya ganó el combate completo (2 Rounds ganados)
     if (estado.roundsAzul === 2) {
         estado.ganadorCombate = 'azul';
     } else if (estado.roundsRojo === 2) {
         estado.ganadorCombate = 'rojo';
     } else {
-        // Si no ha ganado el combate, pasa al descanso después de 4 segundos de titileo
         setTimeout(() => {
             estado.ganadorRound = null;
             estado.enDescanso = true;

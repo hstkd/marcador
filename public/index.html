@@ -1,138 +1,17 @@
 <!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mesa Central - HS Taekwondo</title>
-    <style>
-        body { background: #1a1a1a; color: white; font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; padding: 10px; text-align: center; user-select: none; -webkit-user-select: none; touch-action: manipulation;}
-        .header { font-size: 14px; font-weight: bold; color: #aaa; margin-bottom: 8px; letter-spacing: 1px;}
-        .panel-central { background: #2a2a2a; padding: 12px; border-radius: 12px; margin-bottom: 12px; position: relative;}
-        .panel-config { background: #333; padding: 12px; border-radius: 8px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px; align-items: center;}
-        .config-row { display: flex; gap: 15px; justify-content: center; align-items: center; width: 100%;}
-        .config-group { display: flex; align-items: center; gap: 4px;}
-        .panel-config input[type="number"] { background: #222; color: #ffcc00; border: 1px solid #555; padding: 6px; border-radius: 4px; font-size: 14px; font-weight: bold; width: 45px; text-align: center; font-family: monospace;}
-        .input-nombre { background: #222; color: #fff; border: 1px solid #555; padding: 6px; border-radius: 4px; font-size: 13px; width: 110px; text-align: center;}
-        .btn-aplicar { background: #007bff; color: white; border: none; padding: 6px 15px; font-size: 12px; font-weight: bold; border-radius: 4px; cursor: pointer; margin-top: 4px;}
-        #tiempo { font-size: 55px; font-weight: bold; color: #00ffcc; font-family: monospace; line-height: 1.1;}
-        #round { font-size: 16px; color: #ffcc00; font-weight: bold; text-transform: uppercase; margin-bottom: 5px;}
-        .contenedor { display: flex; justify-content: center; gap: 10px; margin-bottom: 12px; }
-        .box { flex: 1; padding: 15px 5px; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.3);}
-        .azul { background: #0055ff; } .rojo { background: #ff3333; }
-        .pts { font-size: 65px; font-weight: bold; font-family: monospace; line-height: 1; margin: 5px 0;}
-        .luces { font-size: 22px; color: #ffcc00; letter-spacing: 3px; }
-        .rounds-ganados { font-size: 12px; margin-top: 5px; background: rgba(255,255,255,0.15); padding: 3px; border-radius: 5px;}
-        button { background: #444; color: white; border: none; padding: 12px 5px; font-size: 12px; font-weight: bold; border-radius: 6px; flex: 1; }
-        .btn-play { background: #28a745; font-size: 15px; padding: 14px; font-weight: bold;}
-        .btn-az { background: #0044cc; border: 1px solid #0055ff; } .btn-rj { background: #cc2222; border: 1px solid #ff3333; }
-        .bloqueado { opacity: 0.25; pointer-events: none; }
-        .aviso-bloqueo { display: none; color: #ff3333; font-size: 11px; font-weight: bold; text-transform: uppercase; margin-bottom: 5px;}
-        @keyframes titilar { 0% { opacity: 1; } 50% { opacity: 0.2; } 100% { opacity: 1; } }
-        .ganador-titilo { animation: titilar 0.6s infinite ease-in-out; border: 4px solid #ffcc00; }
-        .pantalla-ganador { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; flex-direction: column; justify-content: center; align-items: center; color: white; font-weight: bold;}
-        .pantalla-ganador.pantalla-azul { background: #0044cc; } .pantalla-ganador.pantalla-rojo { background: #cc1111; }
-        .pantalla-ganador h1 { font-size: 45px; margin: 0; } .pantalla-ganador h2 { font-size: 25px; color: #ffcc00; margin-top: 10px; }
-    </style>
-    <script src="/socket.io/socket.io.js"></script>
-</head>
+<html><head><script src="/socket.io/socket.io.js"></script>
+<style>body{background:#222; color:white; text-align:center; font-family:Arial;} button{padding:20px; font-size:20px;}</style></head>
 <body>
-
-    <div id="cartel-ganador" class="pantalla-ganador">
-        <h1 id="texto-ganador">GANADOR</h1>
-        <h2>FIN DEL COMBATE</h2>
-        <button onclick="reiniciarTodo()" style="margin-top:30px; max-width:200px; padding:15px; font-size:16px; background:#fff; color:#111;">NUEVO COMBATE</button>
-    </div>
-
-    <div class="header">HENRY SIGCHOS TAEKWONDO</div>
-
-    <div id="panel-configuracion" class="panel-config">
-        <div class="config-row" style="margin-bottom: 5px;">
-            <div>
-                <label style="font-size:11px; display:block; color:#0055ff; font-weight:bold;">COMPETIDOR AZUL:</label>
-                <input type="text" id="name-azul" class="input-nombre" placeholder="Nombre Azul" value="CHONG">
-            </div>
-            <div>
-                <label style="font-size:11px; display:block; color:#ff3333; font-weight:bold;">COMPETIDOR ROJO:</label>
-                <input type="text" id="name-rojo" class="input-nombre" placeholder="Nombre Rojo" value="HONG">
-            </div>
-        </div>
-        <div class="config-row">
-            <div>
-                <label style="font-size:11px; display:block; font-weight:bold;">ROUND:</label>
-                <div class="config-group">
-                    <input type="number" id="cfg-round-min" value="2">
-                    <span>:</span>
-                    <input type="number" id="cfg-round-seg" value="00">
-                </div>
-            </div>
-            <div>
-                <label style="font-size:11px; display:block; font-weight:bold;">DESCANSO:</label>
-                <div class="config-group">
-                    <input type="number" id="cfg-descanso-min" value="1">
-                    <span>:</span>
-                    <input type="number" id="cfg-descanso-seg" value="00">
-                </div>
-            </div>
-        </div>
-        <button class="btn-aplicar" onclick="aplicarConfiguracion()">Establecer Combate</button>
-    </div>
-    
-    <div class="panel-central">
-        <div id="round">ROUND 1</div>
-        <div id="tiempo">02:00</div>
-        <button id="btn-control" class="btn-play" onclick="controlTiempo()" style="width:100%; margin-top:10px;">INICIAR</button>
-    </div>
-
-    <div class="contenedor">
-        <div id="box-azul" class="box azul">
-            <div id="lbl-azul" style="font-weight:bold; font-size:16px; text-transform:uppercase;">CHONG</div>
-            <div id="pts-azul" class="pts">0</div>
-            <div style="font-size:10px; font-weight:bold;">GAM-JEOM</div>
-            <div id="gam-azul" class="luces">○○○○○</div>
-            <div id="rd-azul" class="rounds-ganados">Rounds: 0</div>
-        </div>
-        <div id="box-rojo" class="box rojo">
-            <div id="lbl-rojo" style="font-weight:bold; font-size:16px; text-transform:uppercase;">HONG</div>
-            <div id="pts-rojo" class="pts">0</div>
-            <div style="font-size:10px; font-weight:bold;">GAM-JEOM</div>
-            <div id="gam-rojo" class="luces">○○○○○</div>
-            <div id="rd-rojo" class="rounds-ganados">Rounds: 0</div>
-        </div>
-    </div>
-
-    <div class="panel-central">
-        <div id="aviso-mesa" class="aviso-bloqueo">Mesa bloqueada: Pausa el tiempo primero</div>
-        <div id="controles-manuales">
-            <div class="contenedor">
-                <button class="btn-az" onclick="sumarMesa('azul',2)">+2 Giro Peto</button>
-                <button class="btn-az" onclick="sumarMesa('azul',3)">+3 Giro Cab.</button>
-                <button class="btn-az" onclick="gamjeom('azul')">+1 Gam-jeom</button>
-            </div>
-            <div class="contenedor">
-                <button class="btn-rj" onclick="sumarMesa('rojo',2)">+2 Giro Peto</button>
-                <button class="btn-rj" onclick="sumarMesa('rojo',3)">+3 Giro Cab.</button>
-                <button class="btn-rj" onclick="gamjeom('rojo')">+1 Gam-jeom</button>
-            </div>
-        </div>
-        <button onclick="reiniciarTodo()" style="background:#555; width:100%; margin-top:5px; padding:10px;">Resetear Combate Completo</button>
-    </div>
-
+    <h1>Mesa Central</h1>
+    <input type="number" id="tiempo" value="120"> 
+    <button onclick="socket.emit('configurarTiempos', {tiempo: document.getElementById('tiempo').value})">ESTABLECER</button>
+    <h1 id="reloj" style="font-size:80px;">02:00</h1>
+    <button onclick="socket.emit('toggleTiempo')">INICIAR / PAUSAR</button>
     <script>
         const socket = io();
-        let nAzulAct = "CHONG"; let nRojoAct = "HONG";
-
-        socket.on('actualizar', (estado) => {
-            let mins = Math.floor(estado.tiempoRestante / 60);
-            let segs = estado.tiempoRestante % 60;
-            document.getElementById('tiempo').innerText = (mins < 10 ? "0" : "") + mins + ":" + (segs < 10 ? "0" : "") + segs;
-            
-            nAzulAct = estado.nombreAzul; nRojoAct = estado.nombreRojo;
-            document.getElementById('lbl-azul').innerText = estado.nombreAzul;
-            document.getElementById('lbl-rojo').innerText = estado.nombreRojo;
-
-            const btnControl = document.getElementById('btn-control');
-            const panelManual = document.getElementById('controles-manuales');
-            const avisoMesa = document.getElementById('aviso-mesa');
-            const panelConfig = document.getElementById('panel-configuracion');
-
-            if (estado.roundActual > 1 || estado.puntosAzul > 0 || estado.puntosRojo > 0 || estado
+        socket.on('actualizar', (e) => {
+            let m = Math.floor(e.tiempoRestante/60), s = e.tiempoRestante%60;
+            document.getElementById('reloj').innerText = m+":"+(s<10?'0':'')+s;
+        });
+    </script>
+</body></html>

@@ -14,7 +14,9 @@ let estado = {
     tiempoConfiguradoRound: 120,
     tiempoConfiguradoDescanso: 60,
     corriendo: false,
-    enDescanso: false
+    enDescanso: false,
+    ganadorRound: null,      // 'azul' o 'rojo' al terminar el round
+    ganadorCombate: null     // 'azul' o 'rojo' al ganar 2 rounds
 };
 
 const VALOR_PUNTOS = { 'puno': 1, 'peto': 2, 'cabeza': 3 };
@@ -23,13 +25,13 @@ io.on('connection', (socket) => {
     socket.emit('actualizar', estado);
 
     socket.on('toggleTiempo', () => {
-        if (estado.enDescanso) return;
+        if (estado.enDescanso || estado.ganadorCombate) return;
         estado.corriendo = !estado.corriendo;
         io.emit('actualizar', estado);
     });
 
     socket.on('modificarMesa', (datos) => {
-        if (!estado.corriendo || estado.enDescanso) return;
+        if (!estado.corriendo || estado.enDescanso || estado.ganadorCombate) return;
         if (datos.competidor === 'azul') estado.puntosAzul += datos.cantidad;
         else estado.puntosRojo += datos.cantidad;
         revisarReglasDeVictoria();
@@ -37,7 +39,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('gamjeomMesa', (datos) => {
-        if (!estado.corriendo || estado.enDescanso) return;
+        if (!estado.corriendo || estado.enDescanso || estado.ganadorCombate) return;
         if (datos.competidor === 'azul') {
             estado.gamjeomAzul++; estado.puntosRojo += 1;
         } else {
@@ -48,14 +50,19 @@ io.on('connection', (socket) => {
     });
 
     socket.on('clickJuez', (datos) => {
-        if (!estado.corriendo || estado.enDescanso) return;
+        if (!estado.corriendo || estado.enDescanso || estado.ganadorCombate) return;
         
-        // MODO DE PRUEBA: Sube directo con 1 solo juez para probar tus 2 celulares hoy
         let puntosASumar = VALOR_PUNTOS[datos.tecnica];
         if (datos.competidor === 'azul') estado.puntosAzul += puntosASumar;
         else estado.puntosRojo += puntosASumar;
         
         revisarReglasDeVictoria();
+        io.emit('actualizar', estado);
+    });
+
+    // Botón extra por si quieres reiniciar todo manualmente desde la mesa
+    socket.on('reiniciarTodo', () => {
+        reiniciarCombate();
         io.emit('actualizar', estado);
     });
 });
@@ -82,27 +89,41 @@ function revisarReglasDeVictoria() {
 function evaluarGanadorRound() {
     if (estado.puntosAzul > estado.puntosRojo) registrarGanadorRound('azul');
     else if (estado.puntosRojo > estado.puntosAzul) registrarGanadorRound('rojo');
-    else registrarGanadorRound('empate');
+    else registrarGanadorRound('empate'); // En tu academia puedes definir superioridad manual si deseas
 }
 
 function registrarGanadorRound(ganador) {
     estado.corriendo = false;
+    estado.ganadorRound = ganador;
+
     if (ganador === 'azul') estado.roundsAzul++;
     if (ganador === 'rojo') estado.roundsRojo++;
 
-    if (estado.roundsAzul === 2 || estado.roundsRojo === 2) {
-        setTimeout(() => { reiniciarCombate(); }, 3000);
+    // Verificar si ya ganó el combate completo (2 Rounds ganados)
+    if (estado.roundsAzul === 2) {
+        estado.ganadorCombate = 'azul';
+    } else if (estado.roundsRojo === 2) {
+        estado.ganadorCombate = 'rojo';
     } else {
-        estado.enDescanso = true;
-        estado.corriendo = true;
-        estado.tiempoRestante = estado.tiempoConfiguradoDescanso;
+        // Si no ha ganado el combate, pasa al descanso después de 4 segundos de titileo
+        setTimeout(() => {
+            estado.ganadorRound = null;
+            estado.enDescanso = true;
+            estado.corriendo = true;
+            estado.tiempoRestante = estado.tiempoConfiguradoDescanso;
+            io.emit('actualizar', estado);
+        }, 4000); 
     }
 }
 
 function finalizarDescanso() {
-    estado.enDescanso = false; estado.corriendo = false; estado.roundActual++;
-    estado.puntosAzul = 0; estado.puntosRojo = 0;
-    estado.gamjeomAzul = 0; estado.gamjeomRojo = 0;
+    estado.enDescanso = false; 
+    estado.corriendo = false; 
+    estado.roundActual++;
+    estado.puntosAzul = 0; 
+    estado.puntosRojo = 0;
+    estado.gamjeomAzul = 0; 
+    estado.gamjeomRojo = 0;
     estado.tiempoRestante = estado.tiempoConfiguradoRound;
 }
 
@@ -110,7 +131,11 @@ function reiniciarCombate() {
     estado.puntosAzul = 0; estado.puntosRojo = 0;
     estado.gamjeomAzul = 0; estado.gamjeomRojo = 0;
     estado.roundsAzul = 0; estado.roundsRojo = 0;
-    estado.roundActual = 1; estado.enDescanso = false; estado.corriendo = false;
+    estado.roundActual = 1; 
+    estado.enDescanso = false; 
+    estado.corriendo = false;
+    estado.ganadorRound = null;
+    estado.ganadorCombate = null;
     estado.tiempoRestante = estado.tiempoConfiguradoRound;
 }
 

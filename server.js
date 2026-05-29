@@ -16,17 +16,47 @@ let estado = {
     corriendo: false,
     enDescanso: false,
     ganadorRound: null,
-    ganadorCombate: null
+    ganadorCombate: null,
+    // Nombres predeterminados
+    nombreAzul: "CHONG",
+    nombreRojo: "HONG",
+    // Control de jueces conectados
+    juecesOcupados: { 1: false, 2: false, 3: false }
 };
 
 const VALOR_PUNTOS = { 'puno': 1, 'peto': 2, 'cabeza': 3 };
-
-// Registro para controlar la coincidencia oficial de jueces
-// Guardará registros con el formato: { competidor, tecnica, idJuez, timestamp }
 let marcasJueces = []; 
 
 io.on('connection', (socket) => {
+    let juezAsignado = null;
+
+    // Enviar estado inicial al conectar
     socket.emit('actualizar', estado);
+    socket.emit('juecesOcupados', estado.juecesOcupados);
+
+    // Intentar ocupar un puesto de juez
+    socket.on('solicitarPuestoJuez', (numero) => {
+        const num = parseInt(numero);
+        if (!estado.juecesOcupados[num]) {
+            // Si el cliente ya tenía un puesto, lo liberamos primero
+            if (juezAsignado) {
+                estado.juecesOcupados[juezAsignado] = false;
+            }
+            juezAsignado = num;
+            estado.juecesOcupados[num] = true;
+            socket.emit('puestoAsignadoExito', num);
+        } else {
+            socket.emit('puestoOcupadoError');
+        }
+        io.emit('juecesOcupados', estado.juecesOcupados);
+    });
+
+    // Actualizar nombres desde la mesa central
+    socket.on('actualizarNombres', (datos) => {
+        estado.nombreAzul = datos.azul.toUpperCase() || "CHONG";
+        estado.nombreRojo = datos.rojo.toUpperCase() || "HONG";
+        io.emit('actualizar', estado);
+    });
 
     socket.on('toggleTiempo', () => {
         if (estado.enDescanso || estado.ganadorCombate) return;
@@ -61,35 +91,24 @@ io.on('connection', (socket) => {
         io.emit('actualizar', estado);
     });
 
-    // LÓGICA OFICIAL DE COINCIDENCIA (MODO 3 JUECES)
     socket.on('clickJuez', (datos) => {
         if (!estado.corriendo || estado.enDescanso || estado.ganadorCombate) return;
-
         const ahora = Date.now();
         const { competidor, tecnica, numeroJuez } = datos;
 
-        // 1. Limpiar marcas viejas (más de 1 segundo de antigüedad) para no acumular basura
         marcasJueces = marcasJueces.filter(m => (ahora - m.timestamp) <= 1000);
-
-        // 2. Verificar si este mismo juez ya presionó este botón en esta ventana de tiempo (evitar doble clic)
         const yaVoto = marcasJueces.some(m => m.competidor === competidor && m.tecnica === tecnica && m.idJuez === numeroJuez);
         
         if (!yaVoto) {
-            // Registrar la intención de este juez
             marcasJueces.push({ competidor, tecnica, idJuez: numeroJuez, timestamp: ahora });
-
-            // 3. Contar cuántos jueces DIFERENTES coinciden en la misma técnica y competidor dentro del último segundo
             const coincidencias = marcasJueces.filter(m => m.competidor === competidor && m.tecnica === tecnica);
 
             if (coincidencias.length >= 2) {
-                // ¡PUNTO OFICIAL CONVALIDADO! (Al menos 2 jueces coincidieron)
                 let puntosASumar = VALOR_PUNTOS[tecnica];
                 if (competidor === 'azul') estado.puntosAzul += puntosASumar;
                 else estado.puntosRojo += puntosASumar;
 
-                // Limpiar los registros de esta acción específica para que no se use el mismo punto otra vez
                 marcasJueces = marcasJueces.filter(m => !(m.competidor === competidor && m.tecnica === tecnica));
-                
                 revisarReglasDeVictoria();
                 io.emit('actualizar', estado);
             }
@@ -100,6 +119,14 @@ io.on('connection', (socket) => {
         reiniciarCombate();
         marcasJueces = [];
         io.emit('actualizar', estado);
+    });
+
+    // Al desconectarse un celular de juez, liberamos su puesto automáticamente
+    socket.on('disconnect', () => {
+        if (juezAsignado) {
+            estado.juecesOcupados[juezAsignado] = false;
+            io.emit('juecesOcupados', estado.juecesOcupados);
+        }
     });
 });
 

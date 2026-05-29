@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mesa Central - HS Taekwondo</title>
+    <style>
+        body { 
+            background: #1a1a1a; 
+            color: white; 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
+            margin: 0; 
+            padding: 10px; 
+            text-align: center; 
+            user-select: none; 
+            -webkit-user-select: none; 
+            touch-action: manipulation;
+        }
+        .header {
+            font-size: 14px;
+            font-weight: bold;
+            color: #aaa;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+        .panel-central { 
+            background: #2a2a2a; 
+            padding: 12px; 
+            border-radius: 12px; 
+            margin-bottom: 12px; 
+        }
+        #tiempo { 
+            font-size: 55px; 
+            font-weight: bold; 
+            color: #00ffcc; 
+            font-family: monospace; 
+            line-height: 1.1;
+        }
+        #round { 
+            font-size: 16px; 
+            color: #ffcc00; 
+            font-weight: bold; 
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        .contenedor { 
+            display: flex; 
+            justify-content: center; 
+            gap: 10px; 
+            margin-bottom: 12px; 
+        }
+        .box { 
+            flex: 1; 
+            padding: 15px 5px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        .azul { background: #0055ff; } 
+        .rojo { background: #ff3333; }
+        .pts { 
+            font-size: 65px; 
+            font-weight: bold; 
+            font-family: monospace; 
+            line-height: 1;
+            margin: 5px 0;
+        }
+        .luces { 
+            font-size: 22px; 
+            color: #ffcc00; 
+            letter-spacing: 3px; 
+        }
+        .rounds-ganados {
+            font-size: 12px;
+            margin-top: 5px;
+            background: rgba(255,255,255,0.15);
+            padding: 3px;
+            border-radius: 5px;
+        }
+        button { 
+            background: #444; 
+            color: white; 
+            border: none; 
+            padding: 12px 5px; 
+            font-size: 12px; 
+            font-weight: bold; 
+            border-radius: 6px; 
+            flex: 1; 
+            -webkit-tap-highlight-color: transparent;
+        }
+        button:active { background: #555; }
+        .btn-play { 
+            background: #28a745; 
+            font-size: 15px; 
+            padding: 14px; 
+            font-weight: bold;
+        }
+        .btn-az { background: #0044cc; border: 1px solid #0055ff; } 
+        .btn-rj { background: #cc2222; border: 1px solid #ff3333; }
+    </style>
+    <!-- Conexión en tiempo real con el servidor central -->
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+    <div class="header">HENRY SIGCHOS TAEKWONDO</div>
+    
+    <div class="panel-central">
+        <div id="round">ROUND 1</div>
+        <div id="tiempo">02:00</div>
+        <button id="btn-control" class="btn-play" onclick="controlTiempo()" style="width:100%; margin-top:10px;">INICIAR</button>
+    </div>
+
+    <!-- PANELES DE PUNTAJE -->
+    <div class="contenedor">
+        <div class="box azul">
+            <div style="font-weight:bold; font-size:16px;">CHONG</div>
+            <div id="pts-azul" class="pts">0</div>
+            <div style="font-size:10px; font-weight:bold;">GAM-JEOM</div>
+            <div id="gam-azul" class="luces">○○○○○</div>
+            <div id="rd-azul" class="rounds-ganados">Rounds: 0</div>
+        </div>
+        <div class="box rojo">
+            <div style="font-weight:bold; font-size:16px;">HONG</div>
+            <div id="pts-rojo" class="pts">0</div>
+            <div style="font-size:10px; font-weight:bold;">GAM-JEOM</div>
+            <div id="gam-rojo" class="luces">○○○○○</div>
+            <div id="rd-rojo" class="rounds-ganados">Rounds: 0</div>
+        </div>
+    </div>
+
+    <!-- PANEL DE CONTROL DE MESA -->
+    <div class="panel-central">
+        <div style="font-size:11px; color:#ffcc00; margin-bottom:8px; font-weight:bold; text-transform:uppercase;">Modificadores Manuales de Mesa</div>
+        <div class="contenedor">
+            <button class="btn-az" onclick="sumarMesa('azul',2)">+2 Giro Peto</button>
+            <button class="btn-az" onclick="sumarMesa('azul',3)">+3 Giro Cab.</button>
+            <button class="btn-az" onclick="gamjeom('azul')">+1 Gam-jeom</button>
+        </div>
+        <div class="contenedor">
+            <button class="btn-rj" onclick="sumarMesa('rojo',2)">+2 Giro Peto</button>
+            <button class="btn-rj" onclick="sumarMesa('rojo',3)">+3 Giro Cab.</button>
+            <button class="btn-rj" onclick="gamjeom('rojo')">+1 Gam-jeom</button>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+
+        // Escucha y actualiza todo el sistema de manera instantánea
+        socket.on('actualizar', (estado) => {
+            let mins = Math.floor(estado.tiempoRestante / 60);
+            let segs = estado.tiempoRestante % 60;
+            document.getElementById('tiempo').innerText = (mins < 10 ? "0" : "") + mins + ":" + (segs < 10 ? "0" : "") + segs;
+            
+            const btnControl = document.getElementById('btn-control');
+            if(estado.enDescanso) {
+                document.getElementById('round').innerText = "DESCANSO";
+                document.getElementById('tiempo').style.color = "#ffcc00";
+                btnControl.innerText = "EN DESCANSO";
+                btnControl.style.backgroundColor = "#555";
+            } else {
+                document.getElementById('round').innerText = "ROUND " + estado.roundActual;
+                document.getElementById('tiempo').style.color = "#00ffcc";
+                if (estado.corriendo) {
+                    btnControl.innerText = "PAUSAR";
+                    btnControl.style.backgroundColor = "#dc3545";
+                } else {
+                    btnControl.innerText = "INICIAR";
+                    btnControl.style.backgroundColor = "#28a745";
+                }
+            }
+
+            document.getElementById('pts-azul').innerText = estado.puntosAzul;
+            document.getElementById('pts-rojo').innerText = estado.puntosRojo;
+            document.getElementById('rd-azul').innerText = "Rounds: " + estado.roundsAzul;
+            document.getElementById('rd-rojo').innerText = "Rounds: " + estado.roundsRojo;
+
+            // Renderizar las luces de las penalizaciones Gam-jeom
+            let lAz = ""; let lRj = "";
+            for(let i=0; i<5; i++) { 
+                lAz += (i < estado.gamjeomAzul) ? "●" : "○"; 
+                lRj += (i < estado.gamjeomRojo) ? "●" : "○"; 
+            }
+            document.getElementById('gam-azul').innerText = lAz;
+            document.getElementById('gam-rojo').innerText = lRj;
+        });
+
+        function controlTiempo() { socket.emit('toggleTiempo'); }
+        function sumarMesa(comp, cant) { socket.emit('modificarMesa', {competidor: comp, cantidad: cant}); }
+        function gamjeom(comp) { socket.emit('gamjeomMesa', {competidor: comp}); }
+    </script>
+</body>
+</html>

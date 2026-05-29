@@ -114,10 +114,9 @@
         .btn-az { background: #0044cc; border: 1px solid #0055ff; } 
         .btn-rj { background: #cc2222; border: 1px solid #ff3333; }
         
-        /* CAPA DE BLOQUEO CUANDO EL TIEMPO CORRE */
         .bloqueado {
             opacity: 0.25;
-            pointer-events: none; /* Deshabilita los clics por completo */
+            pointer-events: none; 
         }
         .aviso-bloqueo {
             display: none;
@@ -226,14 +225,12 @@
             const avisoMesa = document.getElementById('aviso-mesa');
             const panelConfig = document.getElementById('panel-configuracion');
 
-            // Ocultar configurador de tiempo una vez inicia el combate para evitar accidentes
             if (estado.roundActual > 1 || estado.puntosAzul > 0 || estado.puntosRojo > 0 || estado.corriendo) {
                 panelConfig.style.display = 'none';
             } else {
                 panelConfig.style.display = 'flex';
             }
 
-            // APLICAR REGLA DE BLOQUEO DE MESA CENTRAL
             if (estado.corriendo && !estado.enDescanso) {
                 panelManual.classList.add('bloqueado');
                 avisoMesa.style.display = 'block';
@@ -295,7 +292,10 @@
         }
 
         function controlTiempo() { socket.emit('toggleTiempo'); }
-        function sumarMesa(comp, cant) { socket.emit('modificarMesa', {competidor: comp, quantity: cant}); }
+        
+        // AQUÍ ESTÁ LA CORRECCIÓN CLAVE: de 'quantity' a 'cantidad'
+        function sumarMesa(comp, cant) { socket.emit('modificarMesa', {competidor: comp, cantidad: cant}); }
+        
         function gamjeom(comp) { socket.emit('gamjeomMesa', {competidor: comp}); }
         function reiniciarTodo() { socket.emit('reiniciarTodo'); }
     </script>

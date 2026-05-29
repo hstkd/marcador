@@ -11,8 +11,8 @@ let estado = {
     roundsAzul: 0, roundsRojo: 0,
     roundActual: 1,
     tiempoRestante: 120,
-    tiempoConfiguradoRound: 120,      // Variable dinámica
-    tiempoConfiguradoDescanso: 60,    // Variable dinámica
+    tiempoConfiguradoRound: 120,
+    tiempoConfiguradoDescanso: 60,
     corriendo: false,
     enDescanso: false,
     ganadorRound: null,
@@ -20,6 +20,10 @@ let estado = {
 };
 
 const VALOR_PUNTOS = { 'puno': 1, 'peto': 2, 'cabeza': 3 };
+
+// Registro para controlar la coincidencia oficial de jueces
+// Guardará registros con el formato: { competidor, tecnica, idJuez, timestamp }
+let marcasJueces = []; 
 
 io.on('connection', (socket) => {
     socket.emit('actualizar', estado);
@@ -30,21 +34,16 @@ io.on('connection', (socket) => {
         io.emit('actualizar', estado);
     });
 
-    // CONFIGURAR TIEMPOS DESDE LA MESA
     socket.on('configurarTiempos', (datos) => {
-        if (estado.corriendo || estado.roundActual > 1 || estado.puntosAzul > 0 || estado.puntosRojo > 0) {
-            // Solo permite configurar si el combate no ha iniciado realmente
-            return;
-        }
+        if (estado.corriendo || estado.roundActual > 1 || estado.puntosAzul > 0 || estado.puntosRojo > 0) return;
         estado.tiempoConfiguradoRound = parseInt(datos.tiempoRound);
         estado.tiempoConfiguradoDescanso = parseInt(datos.tiempoDescanso);
         estado.tiempoRestante = estado.tiempoConfiguradoRound;
         io.emit('actualizar', estado);
     });
 
-    // MODIFICADORES MANUALES (SOLO FUNCIONAN SI ESTÁ PAUSADO)
     socket.on('modificarMesa', (datos) => {
-        if (estado.corriendo || estado.ganadorCombate) return; // REGLA: Bloqueado si está corriendo
+        if (estado.corriendo || estado.ganadorCombate) return;
         if (datos.competidor === 'azul') estado.puntosAzul += datos.cantidad;
         else estado.puntosRojo += datos.cantidad;
         revisarReglasDeVictoria();
@@ -52,7 +51,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('gamjeomMesa', (datos) => {
-        if (estado.corriendo || estado.ganadorCombate) return; // REGLA: Bloqueado si está corriendo
+        if (estado.corriendo || estado.ganadorCombate) return;
         if (datos.competidor === 'azul') {
             estado.gamjeomAzul++; estado.puntosRojo += 1;
         } else {
@@ -62,20 +61,44 @@ io.on('connection', (socket) => {
         io.emit('actualizar', estado);
     });
 
-    // JUECES DE ESQUINA (ELLOS SÍ SUMAN EN VIVO MIENTRAS CORRE EL TIEMPO)
+    // LÓGICA OFICIAL DE COINCIDENCIA (MODO 3 JUECES)
     socket.on('clickJuez', (datos) => {
         if (!estado.corriendo || estado.enDescanso || estado.ganadorCombate) return;
+
+        const ahora = Date.now();
+        const { competidor, tecnica, numeroJuez } = datos;
+
+        // 1. Limpiar marcas viejas (más de 1 segundo de antigüedad) para no acumular basura
+        marcasJueces = marcasJueces.filter(m => (ahora - m.timestamp) <= 1000);
+
+        // 2. Verificar si este mismo juez ya presionó este botón en esta ventana de tiempo (evitar doble clic)
+        const yaVoto = marcasJueces.some(m => m.competidor === competidor && m.tecnica === tecnica && m.idJuez === numeroJuez);
         
-        let puntosASumar = VALOR_PUNTOS[datos.tecnica];
-        if (datos.competidor === 'azul') estado.puntosAzul += puntosASumar;
-        else estado.puntosRojo += puntosASumar;
-        
-        revisarReglasDeVictoria();
-        io.emit('actualizar', estado);
+        if (!yaVoto) {
+            // Registrar la intención de este juez
+            marcasJueces.push({ competidor, tecnica, idJuez: numeroJuez, timestamp: ahora });
+
+            // 3. Contar cuántos jueces DIFERENTES coinciden en la misma técnica y competidor dentro del último segundo
+            const coincidencias = marcasJueces.filter(m => m.competidor === competidor && m.tecnica === tecnica);
+
+            if (coincidencias.length >= 2) {
+                // ¡PUNTO OFICIAL CONVALIDADO! (Al menos 2 jueces coincidieron)
+                let puntosASumar = VALOR_PUNTOS[tecnica];
+                if (competidor === 'azul') estado.puntosAzul += puntosASumar;
+                else estado.puntosRojo += puntosASumar;
+
+                // Limpiar los registros de esta acción específica para que no se use el mismo punto otra vez
+                marcasJueces = marcasJueces.filter(m => !(m.competidor === competidor && m.tecnica === tecnica));
+                
+                revisarReglasDeVictoria();
+                io.emit('actualizar', estado);
+            }
+        }
     });
 
     socket.on('reiniciarTodo', () => {
         reiniciarCombate();
+        marcasJueces = [];
         io.emit('actualizar', estado);
     });
 });
@@ -131,10 +154,8 @@ function finalizarDescanso() {
     estado.enDescanso = false; 
     estado.corriendo = false; 
     estado.roundActual++;
-    estado.puntosAzul = 0; 
-    estado.puntosRojo = 0;
-    estado.gamjeomAzul = 0; 
-    estado.gamjeomRojo = 0;
+    estado.puntosAzul = 0; estado.puntosRojo = 0;
+    estado.gamjeomAzul = 0; estado.gamjeomRojo = 0;
     estado.tiempoRestante = estado.tiempoConfiguradoRound;
 }
 
@@ -143,10 +164,8 @@ function reiniciarCombate() {
     estado.gamjeomAzul = 0; estado.gamjeomRojo = 0;
     estado.roundsAzul = 0; estado.roundsRojo = 0;
     estado.roundActual = 1; 
-    estado.enDescanso = false; 
-    estado.corriendo = false;
-    estado.ganadorRound = null;
-    estado.ganadorCombate = null;
+    estado.enDescanso = false; estado.corriendo = false;
+    estado.ganadorRound = null; estado.ganadorCombate = null;
     estado.tiempoRestante = estado.tiempoConfiguradoRound;
 }
 

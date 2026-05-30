@@ -5,77 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mando de Juez - HS Taekwondo</title>
     <style>
-        body { 
-            background: #111; 
-            color: white; 
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
-            margin: 0; 
-            padding: 8px; 
-            text-align: center;
-            box-sizing: border-box;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            user-select: none;
-            -webkit-user-select: none;
-            touch-action: manipulation;
-        }
-        .selector-juez {
-            background: #222;
-            padding: 6px;
-            border-radius: 6px;
-            margin-bottom: 8px;
-            font-size: 13px;
-        }
-        .selector-juez select {
-            background: #444;
-            color: #fff;
-            border: none;
-            padding: 4px 10px;
-            font-weight: bold;
-            border-radius: 4px;
-        }
-        .contenedor-juez {
-            display: flex;
-            flex: 1;
-            gap: 8px;
-            height: calc(100% - 45px);
-        }
-        .columna {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            height: 100%;
-        }
-        .azul { background: #0055ff; }
-        .rojo { background: #ff3333; }
-        
-        button {
-            flex: 1;
-            border: none;
-            color: white;
-            font-weight: bold;
-            font-size: 16px;
-            border-radius: 12px;
-            text-transform: uppercase;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.4);
-            -webkit-tap-highlight-color: transparent;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        button:active {
-            filter: brightness(1.3);
-            transform: scale(0.98);
-        }
-        .btn-puno { font-size: 14px; opacity: 0.85; max-height: 20%; }
+        #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1a1a1a; z-index: 10000; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; }
+        #login-overlay input { padding: 15px; font-size: 18px; margin-bottom: 10px; border-radius: 8px; border: none; text-align: center; width: 80%; }
+        #login-overlay button { padding: 15px 30px; font-size: 18px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; }
+
+        body { background: #111; color: white; font-family: -apple-system, sans-serif; margin: 0; padding: 8px; text-align: center; box-sizing: border-box; height: 100vh; display: flex; flex-direction: column; user-select: none; touch-action: manipulation; }
+        .selector-juez { background: #222; padding: 6px; border-radius: 6px; margin-bottom: 8px; font-size: 13px; }
+        .selector-juez select { background: #444; color: #fff; border: none; padding: 4px 10px; font-weight: bold; border-radius: 4px; }
+        .contenedor-juez { display: flex; flex: 1; gap: 8px; height: calc(100% - 45px); }
+        .columna { flex: 1; display: flex; flex-direction: column; gap: 8px; height: 100%; }
+        .azul { background: #0055ff; } .rojo { background: #ff3333; }
+        button { flex: 1; border: none; color: white; font-weight: bold; font-size: 16px; border-radius: 12px; text-transform: uppercase; display: flex; align-items: center; justify-content: center; }
+        button:active { filter: brightness(1.3); transform: scale(0.98); }
     </style>
     <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
 
-    <!-- IDENTIFICADOR DEL DISPOSITIVO -->
+    <div id="login-overlay">
+        <h2>Acceso Juez</h2>
+        <input type="password" id="pass-juez" placeholder="Contraseña de Juez">
+        <button onclick="autenticar()">INGRESAR</button>
+    </div>
+
     <div class="selector-juez">
         ASIGNAR MANDOS: 
         <select id="num-juez">
@@ -86,30 +38,35 @@
     </div>
 
     <div class="contenedor-juez">
-        <!-- BOTONES COMPETIDOR AZUL (CHONG) -->
         <div class="columna">
             <button class="azul" onclick="enviarPunto('azul', 'cabeza')">CABEZAS<br>(3 Pts)</button>
             <button class="azul" onclick="enviarPunto('azul', 'peto')">PETO<br>(2 Pts)</button>
-            <button class="azul class-puno" onclick="enviarPunto('azul', 'puno')">PUÑO (1)</button>
+            <button class="azul" onclick="enviarPunto('azul', 'puno')">PUÑO (1)</button>
         </div>
-
-        <!-- BOTONES COMPETIDOR ROJO (HONG) -->
         <div class="columna">
             <button class="rojo" onclick="enviarPunto('rojo', 'cabeza')">CABEZAS<br>(3 Pts)</button>
             <button class="rojo" onclick="enviarPunto('rojo', 'peto')">PETO<br>(2 Pts)</button>
-            <button class="rojo class-puno" onclick="enviarPunto('rojo', 'puno')">PUÑO (1)</button>
+            <button class="rojo" onclick="enviarPunto('rojo', 'puno')">PUÑO (1)</button>
         </div>
     </div>
 
     <script>
         const socket = io();
 
+        function autenticar() {
+            socket.emit('autenticar', { tipo: 'juez', pass: document.getElementById('pass-juez').value });
+        }
+
+        socket.on('authStatus', (res) => {
+            if(res.ok) document.getElementById('login-overlay').style.display = 'none';
+            else alert("Clave Incorrecta");
+        });
+
         function enviarPunto(comp, tec) {
-            const nJuez = document.getElementById('num-juez').value;
             socket.emit('clickJuez', {
                 competidor: comp,
                 tecnica: tec,
-                numeroJuez: parseInt(nJuez)
+                numeroJuez: parseInt(document.getElementById('num-juez').value)
             });
         }
     </script>

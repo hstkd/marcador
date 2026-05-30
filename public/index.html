@@ -268,11 +268,37 @@ function emitirPitido(frecuencia, duracion) {
         console.log("El navegador bloqueó el audio temporalmente hasta que interactúes con la pantalla.");
     }
 }
-        socket.on('actualizar', (estado) => {
-            let mins = Math.floor(estado.tiempoRestante / 60);
-            let segs = estado.tiempoRestante % 60;
-            document.getElementById('tiempo').innerText = (mins < 10 ? "0" : "") + mins + ":" + (segs < 10 ? "0" : "") + segs;
-            
+            // Guarda estas variables fuera del socket.on para llevar el control del último estado
+let ultimoTiempo = 120;
+let ultimoGamAzul = 0;
+let ultimoGamRojo = 0;
+
+socket.on('actualizar', (estado) => {
+    let mins = Math.floor(estado.tiempoRestante / 60);
+    let segs = estado.tiempoRestante % 60;
+    document.getElementById('tiempo').innerText = (mins < 10 ? "0" : "") + mins + ":" + (segs < 10 ? "0" : "") + segs;
+
+    // --- NUEVO: DETECCIÓN DE SONIDOS ---
+    if (estado.corriendo && estado.tiempoRestante !== ultimoTiempo) {
+        // Cuenta regresiva: 5, 4, 3, 2, 1 segundos restantes (Pitido corto y agudo)
+        if (estado.tiempoRestante <= 5 && estado.tiempoRestante > 0) {
+            emitirPitido(880, 0.15); 
+        }
+        // Fin del Round: 0 segundos (Pitido largo, grave y más fuerte)
+        if (estado.tiempoRestante === 0) {
+            emitirPitido(440, 1.2); 
+        }
+        ultimoTiempo = estado.tiempoRestante;
+    }
+
+    // Alerta de Gam-jeom (Sonido doble de advertencia si sube el contador)
+    if (estado.gamjeomAzul > ultimoGamAzul || estado.gamjeomRojo > ultimoGamRojo) {
+        emitirPitido(587, 0.1);
+        setTimeout(() => emitirPitido(587, 0.1), 150);
+    }
+    ultimoGamAzul = estado.gamjeomAzul;
+    ultimoGamRojo = estado.gamjeomRojo;
+
             const btnControl = document.getElementById('btn-control');
             const panelManual = document.getElementById('controles-manuales');
             const avisoMesa = document.getElementById('aviso-mesa');

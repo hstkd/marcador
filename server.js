@@ -101,6 +101,16 @@ io.on('connection', (socket) => {
         marcasJueces = [];
         io.emit('actualizar', estado);
     });
+    // --- NUEVO: RESOLVER EMPATE DE ROUND MANUALMENTE ---
+    socket.on('resolverEmpateRound', (datos) => {
+        if (!socket.esAdmin) return;
+        // Solo permite ejecutarlo si realmente el round terminó en empate
+        if (estado.ganadorRound === 'empate') {
+            console.log(`[EMPATE RESUELTO] Round otorgado a: ${datos.ganador}`);
+            registrarGanadorRound(datos.ganador);
+            io.emit('actualizar', estado);
+        }
+    });
 });
 
 setInterval(() => {

@@ -102,34 +102,42 @@ io.on('connection', (socket) => {
         io.emit('actualizar', estado);
     });
     // --- NUEVO: RESOLVER EMPATE DE ROUND MANUALMENTE ---
-socket.on('resolverEmpateRound', (datos) => {
+// --- SOLUCIÓN DEFINITIVA AL CLIC DE EMPATE ---
+    socket.on('resolverEmpateRound', (datos) => {
         if (!socket.esAdmin) return;
+        
         if (estado.ganadorRound === 'empate') {
-            console.log(`[EMPATE RESUELTO] Round otorgado a: ${datos.ganador}`);
+            console.log(`[MESA] Empate resuelto manualmente. Ganador: ${datos.ganador}`);
             
-            // Registramos el ganador que elegiste
+            // 1. Asignamos el ganador del round directamente
             estado.ganadorRound = datos.ganador;
+            
+            // 2. Sumamos el round al marcador del competidor
             if (datos.ganador === 'azul') estado.roundsAzul++;
             if (datos.ganador === 'rojo') estado.roundsRojo++;
 
-            // Verificamos si alguien ya ganó 2 rounds con esto
+            // 3. Enviamos la actualización inmediata para que la mesa vea el cambio reflejado
+            io.emit('actualizar', estado);
+
+            // 4. Evaluamos si con esto termina el combate completo o vamos a descanso
             if (estado.roundsAzul === 2) {
                 estado.ganadorCombate = 'azul';
                 estado.corriendo = false;
+                io.emit('actualizar', estado);
             } else if (estado.roundsRojo === 2) {
                 estado.ganadorCombate = 'rojo';
                 estado.corriendo = false;
+                io.emit('actualizar', estado);
             } else {
-                // Si no hay ganador definitivo del combate, forzamos el inicio del descanso
+                // Si van 1-1, esperamos 3 segundos mostrando quién ganó el round y pasamos al descanso
                 setTimeout(() => {
                     estado.ganadorRound = null;
                     estado.enDescanso = true;
-                    estado.corriendo = true; // El tiempo vuelve a correr pero para el descanso
                     estado.tiempoRestante = estado.tiempoConfiguradoDescanso;
+                    estado.corriendo = true; // El cronómetro arranca para contar el descanso
                     io.emit('actualizar', estado);
-                }, 3000); // Te da 3 segundos para ver el cambio en pantalla antes del descanso
+                }, 3000);
             }
-            io.emit('actualizar', estado);
         }
     });
 });

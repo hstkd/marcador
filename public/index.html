@@ -246,6 +246,28 @@
     <script>
         const socket = io();
 
+// --- NUEVA FUNCIÓN PARA GENERAR SONIDOS ELECTRÓNICOS ---
+function emitirPitido(frecuencia, duracion) {
+    try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(frecuencia, audioCtx.currentTime);
+        
+        // Control de volumen (un poco más alto para el final)
+        gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime); 
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + duracion);
+    } catch (e) {
+        console.log("El navegador bloqueó el audio temporalmente hasta que interactúes con la pantalla.");
+    }
+}
         socket.on('actualizar', (estado) => {
             let mins = Math.floor(estado.tiempoRestante / 60);
             let segs = estado.tiempoRestante % 60;

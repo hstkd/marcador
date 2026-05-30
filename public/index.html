@@ -205,6 +205,15 @@
     <div class="panel-central">
         <div id="round">ROUND 1</div>
         <div id="tiempo">02:00</div>
+        <div id="panel-empate" style="display: none; background: #333; padding: 12px; border-radius: 10px; margin-bottom: 10px; border: 2px solid #ffcc00;">
+    <div style="font-size: 13px; font-weight: bold; color: #ffcc00; margin-bottom: 8px; text-transform: uppercase;">
+        ¡ROUND EMPATADO! Selecciona al Ganador por Superioridad:
+    </div>
+    <div style="display: flex; gap: 8px;">
+        <button onclick="decidirEmpate('azul')" style="flex: 1; background: #0055ff; color: white; padding: 12px; font-size: 14px; font-weight: bold; border-radius: 6px; border: none;">Ganador AZUL</button>
+        <button onclick="decidirEmpate('rojo')" style="flex: 1; background: #ff3333; color: white; padding: 12px; font-size: 14px; font-weight: bold; border-radius: 6px; border: none;">Ganador ROJO</button>
+    </div>
+</div>
         <button id="btn-control" class="btn-play" onclick="controlTiempo()" style="width:100%; margin-top:10px;">INICIAR</button>
     </div>
 
@@ -362,6 +371,13 @@ socket.on('actualizar', (estado) => {
             } else {
                 cartel.style.display = 'none';
             }
+    // --- CONTROL VISUAL DEL PANEL DE EMPATE ---
+        const panelEmpate = document.getElementById('panel-empate');
+        if (estado.ganadorRound === 'empate') {
+            panelEmpate.style.display = 'block'; // Muestra los botones si hay empate
+        } else {
+            panelEmpate.style.display = 'none';  // Los oculta en cualquier otro caso
+        }
         });
 
         function aplicarConfiguracion() {
@@ -388,6 +404,9 @@ socket.on('actualizar', (estado) => {
         function sumarMesa(comp, cant) { socket.emit('modificarMesa', {competidor: comp, cantidad: cant}); }
         function gamjeom(comp) { socket.emit('gamjeomMesa', {competidor: comp}); }
         function reiniciarTodo() { socket.emit('reiniciarTodo'); }
+        function decidirEmpate(ganadorCompetidor) {
+        socket.emit('resolverEmpateRound', { ganador: ganadorCompetidor });
+    }
     </script>
 </body>
 </html>

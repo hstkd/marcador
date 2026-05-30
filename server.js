@@ -22,14 +22,13 @@ let estado = {
 const VALOR_PUNTOS = { 'puno': 1, 'peto': 2, 'cabeza': 3 };
 
 // Registro para controlar la coincidencia oficial de jueces
-// Guardará registros con el formato: { competidor, tecnica, idJuez, timestamp }
 let marcasJueces = []; 
 
 io.on('connection', (socket) => {
     socket.emit('actualizar', estado);
 
     socket.on('toggleTiempo', () => {
-        if (estado.enDescanso || estado.ganadorCombate) return;
+        if (estado.enDescanso || estado.ganadorCombate || estado.ganadorRound === 'empate') return;
         estado.corriendo = !estado.corriendo;
         io.emit('actualizar', estado);
     });
@@ -43,7 +42,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('modificarMesa', (datos) => {
-        if (estado.corriendo || estado.ganadorCombate) return;
+        if (estado.corriendo || estado.ganadorCombate || estado.ganadorRound === 'empate') return;
         if (datos.competidor === 'azul') estado.puntosAzul += datos.cantidad;
         else estado.puntosRojo += datos.cantidad;
         revisarReglasDeVictoria();
@@ -51,7 +50,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('gamjeomMesa', (datos) => {
-        if (estado.corriendo || estado.ganadorCombate) return;
+        if (estado.corriendo || estado.ganadorCombate || estado.ganadorRound === 'empate') return;
         if (datos.competidor === 'azul') {
             estado.gamjeomAzul++; estado.puntosRojo += 1;
         } else {
@@ -61,53 +60,10 @@ io.on('connection', (socket) => {
         io.emit('actualizar', estado);
     });
 
-    // LÓGICA OFICIAL DE COINCIDENCIA (MODO 3 JUECES)
-    socket.on('clickJuez', (datos) => {
-        if (!estado.corriendo || estado.enDescanso || estado.ganadorCombate) return;
-
-        const ahora = Date.now();
-        const { competidor, tecnica, numeroJuez } = datos;
-
-        // 1. Limpiar marcas viejas (más de 1 segundo de antigüedad) para no acumular basura
-        marcasJueces = marcasJueces.filter(m => (ahora - m.timestamp) <= 1000);
-
-        // 2. Verificar si este mismo juez ya presionó este botón en esta ventana de tiempo (evitar doble clic)
-        const yaVoto = marcasJueces.some(m => m.competidor === competidor && m.tecnica === tecnica && m.idJuez === numeroJuez);
-        
-        if (!yaVoto) {
-            // Registrar la intención de este juez
-            marcasJueces.push({ competidor, tecnica, idJuez: numeroJuez, timestamp: ahora });
-
-            // 3. Contar cuántos jueces DIFERENTES coinciden en la misma técnica y competidor dentro del último segundo
-            const coincidencias = marcasJueces.filter(m => m.competidor === competidor && m.tecnica === tecnica);
-
-            if (coincidencias.length >= 2) {
-                // ¡PUNTO OFICIAL CONVALIDADO! (Al menos 2 jueces coincidieron)
-                let puntosASumar = VALOR_PUNTOS[tecnica];
-                if (competidor === 'azul') estado.puntosAzul += puntosASumar;
-                else estado.puntosRojo += puntosASumar;
-
-                // Limpiar los registros de esta acción específica para que no se use el mismo punto otra vez
-                marcasJueces = marcasJueces.filter(m => !(m.competidor === competidor && m.tecnica === tecnica));
-                
-                revisarReglasDeVictoria();
-                io.emit('actualizar', estado);
-            }
-        }
-    });
-
-    socket.on('reiniciarTodo', () => {
-        reiniciarCombate();
-        marcasJueces = [];
-        io.emit('actualizar', estado);
-    });
-    // --- NUEVO: RESOLVER EMPATE DE ROUND MANUALMENTE ---
-// --- SOLUCIÓN DEFINITIVA AL CLIC DE EMPATE ---
+    // --- CLIC DE EMPATE SIN RESTRICCIÓN DE CONTRASEÑA ---
     socket.on('resolverEmpateRound', (datos) => {
-        if (!socket.esAdmin) return;
-        
         if (estado.ganadorRound === 'empate') {
-            console.log(`[MESA] Empate resuelto manualmente. Ganador: ${datos.ganador}`);
+            console.log(`[MESA] Empate resuelto libremente. Ganador: ${datos.ganador}`);
             
             // 1. Asignamos el ganador del round directamente
             estado.ganadorRound = datos.ganador;
@@ -116,10 +72,10 @@ io.on('connection', (socket) => {
             if (datos.ganador === 'azul') estado.roundsAzul++;
             if (datos.ganador === 'rojo') estado.roundsRojo++;
 
-            // 3. Enviamos la actualización inmediata para que la mesa vea el cambio reflejado
+            // Enviar cambio inmediato a las pantallas
             io.emit('actualizar', estado);
 
-            // 4. Evaluamos si con esto termina el combate completo o vamos a descanso
+            // 3. Evaluamos si termina el combate completo o vamos a descanso
             if (estado.roundsAzul === 2) {
                 estado.ganadorCombate = 'azul';
                 estado.corriendo = false;
@@ -139,6 +95,37 @@ io.on('connection', (socket) => {
                 }, 3000);
             }
         }
+    });
+
+    socket.on('clickJuez', (datos) => {
+        if (!estado.corriendo || estado.enDescanso || estado.ganadorCombate) return;
+
+        const ahora = Date.now();
+        const { competidor, tecnica, numeroJuez } = datos;
+
+        marcasJueces = marcasJueces.filter(m => (ahora - m.timestamp) <= 1000);
+        const yaVoto = marcasJueces.some(m => m.competidor === competidor && m.tecnica === tecnica && m.idJuez === numeroJuez);
+        
+        if (!yaVoto) {
+            marcasJueces.push({ competidor, tecnica, idJuez: numeroJuez, timestamp: ahora });
+            const coincidencias = marcasJueces.filter(m => m.competidor === competidor && m.tecnica === tecnica);
+
+            if (coincidencias.length >= 2) {
+                let puntosASumar = VALOR_PUNTOS[tecnica];
+                if (competidor === 'azul') estado.puntosAzul += puntosASumar;
+                else estado.puntosRojo += puntosASumar;
+
+                marcasJueces = marcasJueces.filter(m => !(m.competidor === competidor && m.tecnica === tecnica));
+                revisarReglasDeVictoria();
+                io.emit('actualizar', estado);
+            }
+        }
+    });
+
+    socket.on('reiniciarTodo', () => {
+        reiniciarCombate();
+        marcasJueces = [];
+        io.emit('actualizar', estado);
     });
 });
 
@@ -167,10 +154,9 @@ function evaluarGanadorRound() {
     } else if (estado.puntosRojo > estado.puntosAzul) {
         registrarGanadorRound('rojo');
     } else {
-        // --- CAMBIO AQUÍ: Congela el combate en empate y espera el botón de la mesa ---
+        // Congela el combate en empate y espera el botón de la mesa libremente
         estado.corriendo = false; 
         estado.ganadorRound = 'empate';
-        io.emit('actualizar', estado);
     }
 }
 
@@ -197,6 +183,7 @@ function registrarGanadorRound(ganador) {
 }
 
 function finalizarDescanso() {
+    estado.enConsancio = false; 
     estado.enDescanso = false; 
     estado.corriendo = false; 
     estado.roundActual++;

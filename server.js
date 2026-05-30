@@ -102,12 +102,33 @@ io.on('connection', (socket) => {
         io.emit('actualizar', estado);
     });
     // --- NUEVO: RESOLVER EMPATE DE ROUND MANUALMENTE ---
-    socket.on('resolverEmpateRound', (datos) => {
+socket.on('resolverEmpateRound', (datos) => {
         if (!socket.esAdmin) return;
-        // Solo permite ejecutarlo si realmente el round terminó en empate
         if (estado.ganadorRound === 'empate') {
             console.log(`[EMPATE RESUELTO] Round otorgado a: ${datos.ganador}`);
-            registrarGanadorRound(datos.ganador);
+            
+            // Registramos el ganador que elegiste
+            estado.ganadorRound = datos.ganador;
+            if (datos.ganador === 'azul') estado.roundsAzul++;
+            if (datos.ganador === 'rojo') estado.roundsRojo++;
+
+            // Verificamos si alguien ya ganó 2 rounds con esto
+            if (estado.roundsAzul === 2) {
+                estado.ganadorCombate = 'azul';
+                estado.corriendo = false;
+            } else if (estado.roundsRojo === 2) {
+                estado.ganadorCombate = 'rojo';
+                estado.corriendo = false;
+            } else {
+                // Si no hay ganador definitivo del combate, forzamos el inicio del descanso
+                setTimeout(() => {
+                    estado.ganadorRound = null;
+                    estado.enDescanso = true;
+                    estado.corriendo = true; // El tiempo vuelve a correr pero para el descanso
+                    estado.tiempoRestante = estado.tiempoConfiguradoDescanso;
+                    io.emit('actualizar', estado);
+                }, 3000); // Te da 3 segundos para ver el cambio en pantalla antes del descanso
+            }
             io.emit('actualizar', estado);
         }
     });
@@ -133,9 +154,16 @@ function revisarReglasDeVictoria() {
 }
 
 function evaluarGanadorRound() {
-    if (estado.puntosAzul > estado.puntosRojo) registrarGanadorRound('azul');
-    else if (estado.puntosRojo > estado.puntosAzul) registrarGanadorRound('rojo');
-    else registrarGanadorRound('empate');
+    if (estado.puntosAzul > estado.puntosRojo) {
+        registrarGanadorRound('azul');
+    } else if (estado.puntosRojo > estado.puntosAzul) {
+        registrarGanadorRound('rojo');
+    } else {
+        // --- CAMBIO AQUÍ: Congela el combate en empate y espera el botón de la mesa ---
+        estado.corriendo = false; 
+        estado.ganadorRound = 'empate';
+        io.emit('actualizar', estado);
+    }
 }
 
 function registrarGanadorRound(ganador) {

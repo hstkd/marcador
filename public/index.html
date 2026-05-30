@@ -97,6 +97,14 @@
             gap: 10px; 
             margin-bottom: 12px; 
         }
+        /* Nueva clase para invertir solo el marcador superior */
+        .marcador-superior {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 12px;
+            flex-direction: row-reverse; /* Azul a la derecha, Rojo a la izquierda */
+        }
         .box { 
             flex: 1; 
             padding: 15px 5px; 
@@ -206,18 +214,18 @@
         <div id="round">ROUND 1</div>
         <div id="tiempo">02:00</div>
         <div id="panel-empate" style="display: none; background: #333; padding: 12px; border-radius: 10px; margin-bottom: 10px; border: 2px solid #ffcc00;">
-    <div style="font-size: 13px; font-weight: bold; color: #ffcc00; margin-bottom: 8px; text-transform: uppercase;">
-        ¡ROUND EMPATADO! Selecciona al Ganador por Superioridad:
-    </div>
-    <div style="display: flex; gap: 8px;">
-        <button onclick="decidirEmpate('azul')" style="flex: 1; background: #0055ff; color: white; padding: 12px; font-size: 14px; font-weight: bold; border-radius: 6px; border: none;">Ganador AZUL</button>
-        <button onclick="decidirEmpate('rojo')" style="flex: 1; background: #ff3333; color: white; padding: 12px; font-size: 14px; font-weight: bold; border-radius: 6px; border: none;">Ganador ROJO</button>
-    </div>
-</div>
+            <div style="font-size: 13px; font-weight: bold; color: #ffcc00; margin-bottom: 8px; text-transform: uppercase;">
+                ¡ROUND EMPATADO! Selecciona al Ganador por Superioridad:
+            </div>
+            <div style="display: flex; gap: 8px; flex-direction: row-reverse;">
+                <button onclick="decidirEmpate('azul')" style="flex: 1; background: #0055ff; color: white; padding: 12px; font-size: 14px; font-weight: bold; border-radius: 6px; border: none;">Ganador AZUL</button>
+                <button onclick="decidirEmpate('rojo')" style="flex: 1; background: #ff3333; color: white; padding: 12px; font-size: 14px; font-weight: bold; border-radius: 6px; border: none;">Ganador ROJO</button>
+            </div>
+        </div>
         <button id="btn-control" class="btn-play" onclick="controlTiempo()" style="width:100%; margin-top:10px;">INICIAR</button>
     </div>
 
-    <div class="contenedor">
+    <div class="marcador-superior">
         <div id="box-azul" class="box azul">
             <div style="font-weight:bold; font-size:16px;">CHONG</div>
             <div id="pts-azul" class="pts">0</div>
@@ -241,172 +249,4 @@
             <div class="contenedor">
                 <button class="btn-az" onclick="sumarMesa('azul',2)">+2 Giro Peto</button>
                 <button class="btn-az" onclick="sumarMesa('azul',3)">+3 Giro Cab.</button>
-                <button class="btn-az" onclick="gamjeom('azul')">+1 Gam-jeom</button>
-            </div>
-            <div class="contenedor">
-                <button class="btn-rj" onclick="sumarMesa('rojo',2)">+2 Giro Peto</button>
-                <button class="btn-rj" onclick="sumarMesa('rojo',3)">+3 Giro Cab.</button>
-                <button class="btn-rj" onclick="gamjeom('rojo')">+1 Gam-jeom</button>
-            </div>
-        </div>
-        <button onclick="reiniciarTodo()" style="background:#555; width:100%; margin-top:5px; padding:10px;">Resetear Combate Completo</button>
-    </div>
-
-    <script>
-        const socket = io();
-
-// --- NUEVA FUNCIÓN PARA GENERAR SONIDOS ELECTRÓNICOS ---
-function emitirPitido(frecuencia, duracion) {
-    try {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const oscillator = audioCtx.createOscillator();
-        const gainNode = audioCtx.createGain();
-
-        oscillator.type = 'sine';
-        oscillator.frequency.setValueAtTime(frecuencia, audioCtx.currentTime);
-        
-        // Control de volumen (un poco más alto para el final)
-        gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime); 
-
-        oscillator.connect(gainNode);
-        gainNode.connect(audioCtx.destination);
-
-        oscillator.start();
-        oscillator.stop(audioCtx.currentTime + duracion);
-    } catch (e) {
-        console.log("El navegador bloqueó el audio temporalmente hasta que interactúes con la pantalla.");
-    }
-}
-            // Guarda estas variables fuera del socket.on para llevar el control del último estado
-let ultimoTiempo = 120;
-let ultimoGamAzul = 0;
-let ultimoGamRojo = 0;
-
-socket.on('actualizar', (estado) => {
-    let mins = Math.floor(estado.tiempoRestante / 60);
-    let segs = estado.tiempoRestante % 60;
-    document.getElementById('tiempo').innerText = (mins < 10 ? "0" : "") + mins + ":" + (segs < 10 ? "0" : "") + segs;
-
-    // --- NUEVO: DETECCIÓN DE SONIDOS ---
-    if (estado.corriendo && estado.tiempoRestante !== ultimoTiempo) {
-        // Cuenta regresiva: 5, 4, 3, 2, 1 segundos restantes (Pitido corto y agudo)
-        if (estado.tiempoRestante <= 5 && estado.tiempoRestante > 0) {
-            emitirPitido(880, 0.15); 
-        }
-        // Fin del Round: 0 segundos (Pitido largo, grave y más fuerte)
-        if (estado.tiempoRestante === 0) {
-            emitirPitido(440, 1.2); 
-        }
-        ultimoTiempo = estado.tiempoRestante;
-    }
-
-    // Alerta de Gam-jeom (Sonido doble de advertencia si sube el contador)
-    if (estado.gamjeomAzul > ultimoGamAzul || estado.gamjeomRojo > ultimoGamRojo) {
-        emitirPitido(587, 0.1);
-        setTimeout(() => emitirPitido(587, 0.1), 150);
-    }
-    ultimoGamAzul = estado.gamjeomAzul;
-    ultimoGamRojo = estado.gamjeomRojo;
-
-            const btnControl = document.getElementById('btn-control');
-            const panelManual = document.getElementById('controles-manuales');
-            const avisoMesa = document.getElementById('aviso-mesa');
-            const panelConfig = document.getElementById('panel-configuracion');
-
-            if (estado.roundActual > 1 || estado.puntosAzul > 0 || estado.puntosRojo > 0 || estado.corriendo) {
-                panelConfig.style.display = 'none';
-            } else {
-                panelConfig.style.display = 'flex';
-            }
-
-            if (estado.corriendo && !estado.enDescanso) {
-                panelManual.classList.add('bloqueado');
-                avisoMesa.style.display = 'block';
-            } else {
-                panelManual.classList.remove('bloqueado');
-                avisoMesa.style.display = 'none';
-            }
-
-            if(estado.enDescanso) {
-                document.getElementById('round').innerText = "DESCANSO";
-                document.getElementById('tiempo').style.color = "#ffcc00";
-                btnControl.innerText = "EN DESCANSO";
-                btnControl.style.backgroundColor = "#555";
-            } else {
-                document.getElementById('round').innerText = "ROUND " + estado.roundActual;
-                document.getElementById('tiempo').style.color = "#00ffcc";
-                if (estado.corriendo) {
-                    btnControl.innerText = "PAUSAR";
-                    btnControl.style.backgroundColor = "#dc3545";
-                } else {
-                    btnControl.innerText = "INICIAR";
-                    btnControl.style.backgroundColor = "#28a745";
-                }
-            }
-
-            document.getElementById('pts-azul').innerText = estado.puntosAzul;
-            document.getElementById('pts-rojo').innerText = estado.puntosRojo;
-            document.getElementById('rd-azul').innerText = "Rounds: " + estado.roundsAzul;
-            document.getElementById('rd-rojo').innerText = "Rounds: " + estado.roundsRojo;
-
-            let lAz = ""; let lRj = "";
-            for(let i=0; i<5; i++) { 
-                lAz += (i < estado.gamjeomAzul) ? "●" : "○"; 
-                lRj += (i < estado.gamjeomRojo) ? "●" : "○"; 
-            }
-            document.getElementById('gam-azul').innerText = lAz;
-            document.getElementById('gam-rojo').innerText = lRj;
-
-            const bAzul = document.getElementById('box-azul');
-            const bRojo = document.getElementById('box-rojo');
-            bAzul.classList.remove('ganador-titilo'); bRojo.classList.remove('ganador-titilo');
-            if (estado.ganadorRound === 'azul') bAzul.classList.add('ganador-titilo');
-            if (estado.ganadorRound === 'rojo') bRojo.classList.add('ganador-titilo');
-
-            const cartel = document.getElementById('cartel-ganador');
-            if (estado.ganadorCombate) {
-                cartel.style.display = 'flex';
-                cartel.className = 'pantalla-ganador pantalla-' + estado.ganadorCombate;
-                document.getElementById('texto-ganador').innerText = "GANADOR " + (estado.ganadorCombate === 'azul' ? "CHONG (AZUL)" : "HONG (ROJO)");
-            } else {
-                cartel.style.display = 'none';
-            }
-    // --- CONTROL VISUAL DEL PANEL DE EMPATE ---
-        const panelEmpate = document.getElementById('panel-empate');
-        if (estado.ganadorRound === 'empate') {
-            panelEmpate.style.display = 'block'; // Muestra los botones si hay empate
-        } else {
-            panelEmpate.style.display = 'none';  // Los oculta en cualquier otro caso
-        }
-        });
-
-        function aplicarConfiguracion() {
-            const rMin = parseInt(document.getElementById('cfg-round-min').value) || 0;
-            const rSeg = parseInt(document.getElementById('cfg-round-seg').value) || 0;
-            const dMin = parseInt(document.getElementById('cfg-descanso-min').value) || 0;
-            const dSeg = parseInt(document.getElementById('cfg-descanso-seg').value) || 0;
-
-            const totalRoundSegundos = (rMin * 60) + rSeg;
-            const totalDescansoSegundos = (dMin * 60) + dSeg;
-
-            if (totalRoundSegundos <= 0) {
-                alert("El tiempo de round debe ser mayor a 0 segundos.");
-                return;
-            }
-
-            socket.emit('configurarTiempos', { 
-                tiempoRound: totalRoundSegundos, 
-                tiempoDescanso: totalDescansoSegundos 
-            });
-        }
-
-        function controlTiempo() { socket.emit('toggleTiempo'); }
-        function sumarMesa(comp, cant) { socket.emit('modificarMesa', {competidor: comp, cantidad: cant}); }
-        function gamjeom(comp) { socket.emit('gamjeomMesa', {competidor: comp}); }
-        function reiniciarTodo() { socket.emit('reiniciarTodo'); }
-        function decidirEmpate(ganadorCompetidor) {
-        socket.emit('resolverEmpateRound', { ganador: ganadorCompetidor });
-    }
-    </script>
-</body>
-</html>
+                <button

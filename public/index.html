@@ -5,176 +5,49 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mesa Central - HS Taekwondo</title>
     <style>
-        body { 
-            background: #1a1a1a; 
-            color: white; 
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
-            margin: 0; 
-            padding: 10px; 
-            text-align: center; 
-            user-select: none; 
-            -webkit-user-select: none; 
-            touch-action: manipulation;
-        }
-        .header {
-            font-size: 14px;
-            font-weight: bold;
-            color: #aaa;
-            margin-bottom: 8px;
-            letter-spacing: 1px;
-        }
-        .panel-central { 
-            background: #2a2a2a; 
-            padding: 12px; 
-            border-radius: 12px; 
-            margin-bottom: 12px; 
-            position: relative;
-        }
-        .panel-config {
-            background: #333;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            align-items: center;
-        }
-        .config-row {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-        }
-        .config-group {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .panel-config input {
-            background: #222;
-            color: #ffcc00;
-            border: 1px solid #555;
-            padding: 6px;
-            border-radius: 4px;
-            font-size: 14px;
-            font-weight: bold;
-            width: 45px;
-            text-align: center;
-            font-family: monospace;
-        }
-        .btn-aplicar {
-            background: #007bff;
-            color: white;
-            border: none;
-            padding: 6px 15px;
-            font-size: 12px;
-            font-weight: bold;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-top: 4px;
-        }
-        .btn-aplicar:active { background: #0056b3; }
-        
-        #tiempo { 
-            font-size: 55px; 
-            font-weight: bold; 
-            color: #00ffcc; 
-            font-family: monospace; 
-            line-height: 1.1;
-        }
-        #round { 
-            font-size: 16px; 
-            color: #ffcc00; 
-            font-weight: bold; 
-            text-transform: uppercase;
-            margin-bottom: 5px;
-        }
-        .contenedor { 
-            display: flex; 
-            justify-content: center; 
-            gap: 10px; 
-            margin-bottom: 12px; 
-        }
-        .box { 
-            flex: 1; 
-            padding: 15px 5px; 
-            border-radius: 12px; 
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-        }
-        .azul { background: #0055ff; } 
-        .rojo { background: #ff3333; }
-        .pts { 
-            font-size: 65px; 
-            font-weight: bold; 
-            font-family: monospace; 
-            line-height: 1;
-            margin: 5px 0;
-        }
-        .luces { 
-            font-size: 22px; 
-            color: #ffcc00; 
-            letter-spacing: 3px; 
-        }
-        .rounds-ganados {
-            font-size: 12px;
-            margin-top: 5px;
-            background: rgba(255,255,255,0.15);
-            padding: 3px;
-            border-radius: 5px;
-        }
-        button { 
-            background: #444; 
-            color: white; 
-            border: none; 
-            padding: 12px 5px; 
-            font-size: 12px; 
-            font-weight: bold; 
-            border-radius: 6px; 
-            flex: 1; 
-        }
-        .btn-play { 
-            background: #28a745; 
-            font-size: 15px; 
-            padding: 14px; 
-            font-weight: bold;
-        }
+        #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1a1a1a; z-index: 10000; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        #login-overlay input { padding: 15px; font-size: 18px; margin-bottom: 10px; border-radius: 8px; border: none; text-align: center; }
+        #login-overlay button { padding: 15px 30px; font-size: 18px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; }
+
+        body { background: #1a1a1a; color: white; font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; padding: 10px; text-align: center; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+        .header { font-size: 14px; font-weight: bold; color: #aaa; margin-bottom: 8px; letter-spacing: 1px; }
+        .panel-central { background: #2a2a2a; padding: 12px; border-radius: 12px; margin-bottom: 12px; position: relative; }
+        .panel-config { background: #333; padding: 12px; border-radius: 8px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+        .config-row { display: flex; gap: 15px; justify-content: center; align-items: center; width: 100%; }
+        .config-group { display: flex; align-items: center; gap: 4px; }
+        .panel-config input { background: #222; color: #ffcc00; border: 1px solid #555; padding: 6px; border-radius: 4px; font-size: 14px; font-weight: bold; width: 45px; text-align: center; font-family: monospace; }
+        .btn-aplicar { background: #007bff; color: white; border: none; padding: 6px 15px; font-size: 12px; font-weight: bold; border-radius: 4px; cursor: pointer; margin-top: 4px; }
+        #tiempo { font-size: 55px; font-weight: bold; color: #00ffcc; font-family: monospace; line-height: 1.1; }
+        #round { font-size: 16px; color: #ffcc00; font-weight: bold; text-transform: uppercase; margin-bottom: 5px; }
+        .contenedor { display: flex; justify-content: center; gap: 10px; margin-bottom: 12px; }
+        .box { flex: 1; padding: 15px 5px; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+        .azul { background: #0055ff; } .rojo { background: #ff3333; }
+        .pts { font-size: 65px; font-weight: bold; font-family: monospace; line-height: 1; margin: 5px 0; }
+        .luces { font-size: 22px; color: #ffcc00; letter-spacing: 3px; }
+        .rounds-ganados { font-size: 12px; margin-top: 5px; background: rgba(255,255,255,0.15); padding: 3px; border-radius: 5px; }
+        button { background: #444; color: white; border: none; padding: 12px 5px; font-size: 12px; font-weight: bold; border-radius: 6px; flex: 1; }
+        .btn-play { background: #28a745; font-size: 15px; padding: 14px; font-weight: bold; }
         .btn-az { background: #0044cc; border: 1px solid #0055ff; } 
         .btn-rj { background: #cc2222; border: 1px solid #ff3333; }
-        
-        .bloqueado {
-            opacity: 0.25;
-            pointer-events: none; 
-        }
-        .aviso-bloqueo {
-            display: none;
-            color: #ff3333;
-            font-size: 11px;
-            font-weight: bold;
-            text-transform: uppercase;
-            margin-bottom: 5px;
-        }
-
+        .bloqueado { opacity: 0.25; pointer-events: none; }
+        .aviso-bloqueo { display: none; color: #ff3333; font-size: 11px; font-weight: bold; text-transform: uppercase; margin-bottom: 5px; }
         @keyframes titilar { 0% { opacity: 1; } 50% { opacity: 0.2; } 100% { opacity: 1; } }
         .ganador-titilo { animation: titilar 0.6s infinite ease-in-out; border: 4px solid #ffcc00; }
-
-        .pantalla-ganador {
-            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999;
-            flex-direction: column; justify-content: center; align-items: center; color: white; font-weight: bold;
-        }
-        .pantalla-ganador.pantalla-azul { background: #0044cc; }
-        .pantalla-ganador.pantalla-rojo { background: #cc1111; }
-        .pantalla-ganador h1 { font-size: 45px; margin: 0; }
-        .pantalla-ganador h2 { font-size: 25px; color: #ffcc00; margin-top: 10px; }
+        .pantalla-ganador { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; flex-direction: column; justify-content: center; align-items: center; color: white; font-weight: bold; }
+        .pantalla-azul { background: #0044cc; } .pantalla-rojo { background: #cc1111; }
     </style>
     <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
 
+    <div id="login-overlay">
+        <h2 style="color:white;">Acceso Mesa Central</h2>
+        <input type="password" id="pass-mesa" placeholder="Contraseña">
+        <button onclick="autenticar()">INGRESAR</button>
+    </div>
+
     <div id="cartel-ganador" class="pantalla-ganador">
-        <h1 id="texto-ganador">GANADOR CHONG (AZUL)</h1>
-        <h2>FIN DEL COMBATE</h2>
+        <h1 id="texto-ganador">GANADOR</h1>
         <button onclick="reiniciarTodo()" style="margin-top:30px; max-width:200px; padding:15px; font-size:16px; background:#fff; color:#111;">NUEVO COMBATE</button>
     </div>
 
@@ -182,21 +55,11 @@
 
     <div id="panel-configuracion" class="panel-config">
         <div class="config-row">
-            <div>
-                <label style="font-size:11px; display:block; margin-bottom:2px; font-weight:bold;">TIEMPO ROUND:</label>
-                <div class="config-group">
-                    <input type="number" id="cfg-round-min" value="2" min="0" max="9" placeholder="Min">
-                    <span>:</span>
-                    <input type="number" id="cfg-round-seg" value="00" min="0" max="59" placeholder="Seg">
-                </div>
+            <div><label style="font-size:11px; font-weight:bold;">TIEMPO ROUND:</label>
+                <div class="config-group"><input type="number" id="cfg-round-min" value="2"><span>:</span><input type="number" id="cfg-round-seg" value="00"></div>
             </div>
-            <div>
-                <label style="font-size:11px; display:block; margin-bottom:2px; font-weight:bold;">TIEMPO DESCANSO:</label>
-                <div class="config-group">
-                    <input type="number" id="cfg-descanso-min" value="1" min="0" max="9" placeholder="Min">
-                    <span>:</span>
-                    <input type="number" id="cfg-descanso-seg" value="00" min="0" max="59" placeholder="Seg">
-                </div>
+            <div><label style="font-size:11px; font-weight:bold;">TIEMPO DESCANSO:</label>
+                <div class="config-group"><input type="number" id="cfg-descanso-min" value="1"><span>:</span><input type="number" id="cfg-descanso-seg" value="00"></div>
             </div>
         </div>
         <button class="btn-aplicar" onclick="aplicarConfiguracion()">Establecer Tiempos</button>
@@ -209,136 +72,54 @@
     </div>
 
     <div class="contenedor">
-        <div id="box-azul" class="box azul">
-            <div style="font-weight:bold; font-size:16px;">CHONG</div>
-            <div id="pts-azul" class="pts">0</div>
-            <div style="font-size:10px; font-weight:bold;">GAM-JEOM</div>
-            <div id="gam-azul" class="luces">○○○○○</div>
-            <div id="rd-azul" class="rounds-ganados">Rounds: 0</div>
-        </div>
-        <div id="box-rojo" class="box rojo">
-            <div style="font-weight:bold; font-size:16px;">HONG</div>
-            <div id="pts-rojo" class="pts">0</div>
-            <div style="font-size:10px; font-weight:bold;">GAM-JEOM</div>
-            <div id="gam-rojo" class="luces">○○○○○</div>
-            <div id="rd-rojo" class="rounds-ganados">Rounds: 0</div>
-        </div>
+        <div id="box-azul" class="box azul"><div style="font-weight:bold; font-size:16px;">CHONG</div><div id="pts-azul" class="pts">0</div><div id="gam-azul" class="luces">○○○○○</div><div id="rd-azul" class="rounds-ganados">Rounds: 0</div></div>
+        <div id="box-rojo" class="box rojo"><div style="font-weight:bold; font-size:16px;">HONG</div><div id="pts-rojo" class="pts">0</div><div id="gam-rojo" class="luces">○○○○○</div><div id="rd-rojo" class="rounds-ganados">Rounds: 0</div></div>
     </div>
 
     <div class="panel-central">
-        <div id="aviso-mesa" class="aviso-bloqueo">Mesa bloqueada: Pausa el tiempo primero</div>
+        <div id="aviso-mesa" class="aviso-bloqueo">Mesa bloqueada: Pausa el tiempo</div>
         <div id="controles-manuales">
-            <div style="font-size:11px; color:#ffcc00; margin-bottom:8px; font-weight:bold; text-transform:uppercase;">Modificadores Manuales de Mesa</div>
-            <div class="contenedor">
-                <button class="btn-az" onclick="sumarMesa('azul',2)">+2 Giro Peto</button>
-                <button class="btn-az" onclick="sumarMesa('azul',3)">+3 Giro Cab.</button>
-                <button class="btn-az" onclick="gamjeom('azul')">+1 Gam-jeom</button>
-            </div>
-            <div class="contenedor">
-                <button class="btn-rj" onclick="sumarMesa('rojo',2)">+2 Giro Peto</button>
-                <button class="btn-rj" onclick="sumarMesa('rojo',3)">+3 Giro Cab.</button>
-                <button class="btn-rj" onclick="gamjeom('rojo')">+1 Gam-jeom</button>
-            </div>
+            <div class="contenedor"><button class="btn-az" onclick="sumarMesa('azul',2)">+2 Peto</button><button class="btn-az" onclick="sumarMesa('azul',3)">+3 Cab.</button><button class="btn-az" onclick="gamjeom('azul')">+1 Gam</button></div>
+            <div class="contenedor"><button class="btn-rj" onclick="sumarMesa('rojo',2)">+2 Peto</button><button class="btn-rj" onclick="sumarMesa('rojo',3)">+3 Cab.</button><button class="btn-rj" onclick="gamjeom('rojo')">+1 Gam</button></div>
         </div>
-        <button onclick="reiniciarTodo()" style="background:#555; width:100%; margin-top:5px; padding:10px;">Resetear Combate Completo</button>
+        <button onclick="reiniciarTodo()" style="background:#555; width:100%; margin-top:5px; padding:10px;">Resetear</button>
     </div>
 
     <script>
         const socket = io();
+        function autenticar() {
+            socket.emit('autenticar', { tipo: 'mesa', pass: document.getElementById('pass-mesa').value });
+        }
+        socket.on('authStatus', (res) => { if(res.ok) document.getElementById('login-overlay').style.display = 'none'; else alert("Clave Incorrecta"); });
 
         socket.on('actualizar', (estado) => {
             let mins = Math.floor(estado.tiempoRestante / 60);
             let segs = estado.tiempoRestante % 60;
             document.getElementById('tiempo').innerText = (mins < 10 ? "0" : "") + mins + ":" + (segs < 10 ? "0" : "") + segs;
-            
-            const btnControl = document.getElementById('btn-control');
-            const panelManual = document.getElementById('controles-manuales');
-            const avisoMesa = document.getElementById('aviso-mesa');
-            const panelConfig = document.getElementById('panel-configuracion');
-
-            if (estado.roundActual > 1 || estado.puntosAzul > 0 || estado.puntosRojo > 0 || estado.corriendo) {
-                panelConfig.style.display = 'none';
-            } else {
-                panelConfig.style.display = 'flex';
-            }
-
-            if (estado.corriendo && !estado.enDescanso) {
-                panelManual.classList.add('bloqueado');
-                avisoMesa.style.display = 'block';
-            } else {
-                panelManual.classList.remove('bloqueado');
-                avisoMesa.style.display = 'none';
-            }
-
-            if(estado.enDescanso) {
-                document.getElementById('round').innerText = "DESCANSO";
-                document.getElementById('tiempo').style.color = "#ffcc00";
-                btnControl.innerText = "EN DESCANSO";
-                btnControl.style.backgroundColor = "#555";
-            } else {
-                document.getElementById('round').innerText = "ROUND " + estado.roundActual;
-                document.getElementById('tiempo').style.color = "#00ffcc";
-                if (estado.corriendo) {
-                    btnControl.innerText = "PAUSAR";
-                    btnControl.style.backgroundColor = "#dc3545";
-                } else {
-                    btnControl.innerText = "INICIAR";
-                    btnControl.style.backgroundColor = "#28a745";
-                }
-            }
-
+            document.getElementById('panel-configuracion').style.display = (estado.roundActual > 1 || estado.corriendo) ? 'none' : 'flex';
+            document.getElementById('controles-manuales').className = (estado.corriendo) ? 'bloqueado' : '';
+            document.getElementById('aviso-mesa').style.display = (estado.corriendo) ? 'block' : 'none';
             document.getElementById('pts-azul').innerText = estado.puntosAzul;
             document.getElementById('pts-rojo').innerText = estado.puntosRojo;
             document.getElementById('rd-azul').innerText = "Rounds: " + estado.roundsAzul;
             document.getElementById('rd-rojo').innerText = "Rounds: " + estado.roundsRojo;
-
-            let lAz = ""; let lRj = "";
-            for(let i=0; i<5; i++) { 
-                lAz += (i < estado.gamjeomAzul) ? "●" : "○"; 
-                lRj += (i < estado.gamjeomRojo) ? "●" : "○"; 
-            }
+            let lAz = "", lRj = "";
+            for(let i=0; i<5; i++) { lAz += (i < estado.gamjeomAzul) ? "●" : "○"; lRj += (i < estado.gamjeomRojo) ? "●" : "○"; }
             document.getElementById('gam-azul').innerText = lAz;
             document.getElementById('gam-rojo').innerText = lRj;
-
-            const bAzul = document.getElementById('box-azul');
-            const bRojo = document.getElementById('box-rojo');
-            bAzul.classList.remove('ganador-titilo'); bRojo.classList.remove('ganador-titilo');
-            if (estado.ganadorRound === 'azul') bAzul.classList.add('ganador-titilo');
-            if (estado.ganadorRound === 'rojo') bRojo.classList.add('ganador-titilo');
-
-            const cartel = document.getElementById('cartel-ganador');
-            if (estado.ganadorCombate) {
-                cartel.style.display = 'flex';
-                cartel.className = 'pantalla-ganador pantalla-' + estado.ganadorCombate;
-                document.getElementById('texto-ganador').innerText = "GANADOR " + (estado.ganadorCombate === 'azul' ? "CHONG (AZUL)" : "HONG (ROJO)");
-            } else {
-                cartel.style.display = 'none';
-            }
+            document.getElementById('cartel-ganador').style.display = estado.ganadorCombate ? 'flex' : 'none';
+            if(estado.ganadorCombate) document.getElementById('texto-ganador').innerText = "GANADOR " + estado.ganadorCombate.toUpperCase();
         });
 
         function aplicarConfiguracion() {
-            const rMin = parseInt(document.getElementById('cfg-round-min').value) || 0;
-            const rSeg = parseInt(document.getElementById('cfg-round-seg').value) || 0;
-            const dMin = parseInt(document.getElementById('cfg-descanso-min').value) || 0;
-            const dSeg = parseInt(document.getElementById('cfg-descanso-seg').value) || 0;
-
-            const totalRoundSegundos = (rMin * 60) + rSeg;
-            const totalDescansoSegundos = (dMin * 60) + dSeg;
-
-            if (totalRoundSegundos <= 0) {
-                alert("El tiempo de round debe ser mayor a 0 segundos.");
-                return;
-            }
-
             socket.emit('configurarTiempos', { 
-                tiempoRound: totalRoundSegundos, 
-                tiempoDescanso: totalDescansoSegundos 
+                tiempoRound: (parseInt(document.getElementById('cfg-round-min').value)*60) + parseInt(document.getElementById('cfg-round-seg').value), 
+                tiempoDescanso: (parseInt(document.getElementById('cfg-descanso-min').value)*60) + parseInt(document.getElementById('cfg-descanso-seg').value)
             });
         }
-
         function controlTiempo() { socket.emit('toggleTiempo'); }
-        function sumarMesa(comp, cant) { socket.emit('modificarMesa', {competidor: comp, cantidad: cant}); }
-        function gamjeom(comp) { socket.emit('gamjeomMesa', {competidor: comp}); }
+        function sumarMesa(c, cant) { socket.emit('modificarMesa', {competidor: c, cantidad: cant}); }
+        function gamjeom(c) { socket.emit('gamjeomMesa', {competidor: c}); }
         function reiniciarTodo() { socket.emit('reiniciarTodo'); }
     </script>
 </body>

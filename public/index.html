@@ -230,7 +230,11 @@
         <div id="aviso-mesa" class="aviso-bloqueo">Mesa bloqueada: Pausa el tiempo primero</div>
         <div id="controles-manuales">
             <div style="font-size:11px; color:#ffcc00; margin-bottom:8px; font-weight:bold; text-transform:uppercase;">Modificadores Manuales de Mesa</div>
-            <div class="contenedor">
+            <!-- COPIA ESTO: Botón UNDO exclusivo para la mesa -->
+            <button onclick="deshacerAccion()" style="background: #e67e22; width: 100%; margin-bottom: 12px; padding: 10px; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; border-radius: 6px; cursor: pointer; color: white; border: none;">
+                ↩️ Deshacer Última Acción (UNDO)
+            </button>
+                <div class="contenedor">
                 <button class="btn-az" onclick="sumarMesa('azul',2)">+2 Giro Peto</button>
                 <button class="btn-az" onclick="sumarMesa('azul',3)">+3 Giro Cab.</button>
                 <button class="btn-az" onclick="gamjeom('azul')">Gam-jeom</button>

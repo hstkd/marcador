@@ -200,10 +200,6 @@
         <div id="tiempo">02:00</div>
         <div id="panel-empate" style="display: none; background: #333; padding: 12px; border-radius: 10px; margin-bottom: 10px; border: 2px solid #ffcc00;">
     <div style="font-size: 13px; font-weight: bold; color: #ffcc00; margin-bottom: 8px; text-transform: uppercase;">
-        <div id="puntos-rojo" class="puntos-gigantes">0</div>
-<button onclick="cambiarPuntos('rojo', -1)" class="btn-restar">-1 Pto</button>
-<div id="puntos-azul" class="puntos-gigantes">0</div>
-<button onclick="cambiarPuntos('azul', -1)" class="btn-restar">-1 Pto</button>
 
         ¡ROUND EMPATADO! Selecciona al Ganador por Superioridad:
     </div>
@@ -387,27 +383,6 @@ socket.on('actualizar', (estado) => {
         function decidirEmpate(ganadorCompetidor) {
         socket.emit('resolverEmpateRound', { ganador: ganadorCompetidor });
     }
-    </script>
-        <script>
-        // 1. Memoria interna del marcador
-        let datosCombate = {
-            rojo: { puntos: 0, gamjeoms: 0 },
-            azul: { puntos: 0, gamjeoms: 0 }
-        };
-
-        // 2. Función para cambiar puntos (Suma y Resta)
-        function cambiarPuntos(color, cantidad) {
-            // Modifica los puntos internos
-            datosCombate[color].puntos += cantidad;
-            
-            // Escudo para no bajar de 0
-            if (datosCombate[color].puntos < 0) {
-                datosCombate[color].puntos = 0;
-            }
-            
-            // Actualiza el número gigante en la pantalla
-            document.getElementById(`puntos-${color}`).innerText = datosCombate[color].puntos;
-        }
     </script>
 </body>
 </html> 

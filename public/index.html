@@ -292,7 +292,7 @@ socket.on('actualizar', (estado) => {
 
     // --- NUEVO: DETECCIÓN DE SONIDOS ---
     if (estado.corriendo && estado.tiempoRestante !==     // --- DETECCIÓN DE SONIDOS CORREGIDA (SIN FILTRO DE TRANCADO) ---
-    if (estado.tiempoRestante !== ultimoTiempo) {
+    if (estado.tiempoRestante !== ultimoTiempo) 
         
         // Solo permitimos los pitidos de cuenta regresiva si el tiempo avanza
         if (estado.corriendo) {

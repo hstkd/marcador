@@ -234,11 +234,15 @@
                 <button class="btn-az" onclick="sumarMesa('azul',2)">+2 Giro Peto</button>
                 <button class="btn-az" onclick="sumarMesa('azul',3)">+3 Giro Cab.</button>
                 <button class="btn-az" onclick="gamjeom('azul')">+1 Gam-jeom</button>
+                <button class="btn-rj" onclick="restarMesa('azul')" style="background: #002266;">-1 Pto</button>
+    
             </div>
             <div class="contenedor">
                 <button class="btn-rj" onclick="sumarMesa('rojo',2)">+2 Giro Peto</button>
                 <button class="btn-rj" onclick="sumarMesa('rojo',3)">+3 Giro Cab.</button>
                 <button class="btn-rj" onclick="gamjeom('rojo')">+1 Gam-jeom</button>
+                <button class="btn-rj" onclick="restarMesa('rojo')" style="background: #661111;">-1 Pto</button>
+    
             </div>
         </div>
         <button onclick="reiniciarTodo()" style="background:#555; width:100%; margin-top:5px; padding:10px;">Resetear Combate Completo</button>
@@ -379,6 +383,20 @@ socket.on('actualizar', (estado) => {
         function controlTiempo() { socket.emit('toggleTiempo'); }
         function sumarMesa(comp, cant) { socket.emit('modificarMesa', {competidor: comp, cantidad: cant}); }
         function gamjeom(comp) { socket.emit('gamjeomMesa', {competidor: comp}); }
+                function controlTiempo() { socket.emit('toggleTiempo'); }
+        function sumarMesa(comp, cant) { socket.emit('modificarMesa', {competidor: comp, cantidad: cant}); }
+        function gamjeom(comp) { socket.emit('gamjeomMesa', {competidor: comp}); }
+        
+        // --- NUEVA FUNCIÓN PARA RESTAR PUNTOS ---
+        function restarMesa(comp) { 
+            socket.emit('modificarMesa', {competidor: comp, cantidad: -1}); 
+        }
+
+        function reiniciarTodo() { socket.emit('reiniciarTodo'); }
+        function decidirEmpate(ganadorCompetidor) {
+            socket.emit('resolverEmpateRound', { ganador: ganadorCompetidor });
+        }
+
         function reiniciarTodo() { socket.emit('reiniciarTodo'); }
         function decidirEmpate(ganadorCompetidor) {
         socket.emit('resolverEmpateRound', { ganador: ganadorCompetidor });

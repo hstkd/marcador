@@ -144,8 +144,6 @@ io.on('connection', (socket) => {
     });
 
     socket.on('reiniciarTodo', () => {
-
-    socket.on('reiniciarTodo', () => {
         reiniciarCombate();
         marcasJueces = [];
         io.emit('actualizar', estado);

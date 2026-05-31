@@ -128,11 +128,14 @@ io.on('connection', (socket) => {
         }
     });
 
-        // Escuchador para el botón UNDO de la mesa
+         // --- MANEJADOR DE UNDO BLINDADO PARA PRODUCCIÓN ---
     socket.on('deshacerUltimaAccion', () => {
         if (historialAcciones.length > 0) {
-            // Sacamos el último estado guardado y reemplazamos el actual
-            estado = historialAcciones.pop();
+            const estadoAnterior = historialAcciones.pop();
+            
+            // En lugar de reasignar el objeto completo, copiamos sus valores internos
+            Object.assign(estado, estadoAnterior);
+            
             console.log("[MESA] UNDO ejecutado con éxito.");
             io.emit('actualizar', estado);
         } else {

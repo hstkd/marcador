@@ -291,17 +291,26 @@ socket.on('actualizar', (estado) => {
     document.getElementById('tiempo').innerText = (mins < 10 ? "0" : "") + mins + ":" + (segs < 10 ? "0" : "") + segs;
 
     // --- NUEVO: DETECCIÓN DE SONIDOS ---
-    if (estado.corriendo && estado.tiempoRestante !== ultimoTiempo) {
-        // Cuenta regresiva: 5, 4, 3, 2, 1 segundos restantes (Pitido corto y agudo)
-        if (estado.tiempoRestante <= 5 && estado.tiempoRestante > 0) {
-            emitirPitido(880, 0.15); 
+    if (estado.corriendo && estado.tiempoRestante !==     // --- DETECCIÓN DE SONIDOS CORREGIDA (SIN FILTRO DE TRANCADO) ---
+    if (estado.tiempoRestante !== ultimoTiempo) {
+        
+        // Solo permitimos los pitidos de cuenta regresiva si el tiempo avanza
+        if (estado.corriendo) {
+            // Cuenta regresiva: 5, 4, 3, 2, 1 segundos restantes
+            if (estado.tiempoRestante <= 5 && estado.tiempoRestante > 0) {
+                emitirPitido(880, 0.15, 0.4); 
+            }
         }
-        // Fin del Round: 0 segundos (Pitido largo, grave y más fuerte)
+        
+        // ¡OJO AQUÍ! El final del round (0 segundos) DEBE sonar siempre, 
+        // incluso si el servidor detiene el reloj en ese mismo instante.
         if (estado.tiempoRestante === 0) {
-            emitirPitido(440, 1.2); 
+            emitirPitido(440, 1.5, 1.0); // Pitido de término (Volumen Máximo)
         }
+        
         ultimoTiempo = estado.tiempoRestante;
     }
+
     // Alerta de Gam-jeom (Sonido doble de advertencia si sube el contador)
     if (estado.gamjeomAzul > ultimoGamAzul || estado.gamjeomRojo > ultimoGamRojo) {
         emitirPitido(587, 0.1);

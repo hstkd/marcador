@@ -250,23 +250,36 @@
     <script>
         const socket = io();
 // --- NUEVA FUNCIÓN PARA GENERAR SONIDOS ELECTRÓNICOS ---
-function emitirPitido(frecuencia, duracion) {
+function emitirPitido(frecuencia, duracion, vol = 0.3) {
     try {
+        // Creamos o recuperamos el contexto de audio
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // --- EL ARREGLO CLAVE ---
+        // Si el navegador congeló el audio en modo "suspended", lo despertamos a la fuerza
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+
         const oscillator = audioCtx.createOscillator();
         const gainNode = audioCtx.createGain();
+        
         oscillator.type = 'sine';
         oscillator.frequency.setValueAtTime(frecuencia, audioCtx.currentTime);
-        // Control de volumen (un poco más alto para el final)
-        gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime); 
+        
+        // Volumen modificado (0.4 para los 5 seg, 1.0 para el final)
+        gainNode.gain.setValueAtTime(vol, audioCtx.currentTime); 
+        
         oscillator.connect(gainNode);
         gainNode.connect(audioCtx.destination);
+        
         oscillator.start();
         oscillator.stop(audioCtx.currentTime + duracion);
     } catch (e) {
-        console.log("El navegador bloqueó el audio temporalmente hasta que interactúes con la pantalla.");
+        console.log("Error en el sistema de audio:", e);
     }
 }
+
             // Guarda estas variables fuera del socket.on para llevar el control del último estado
 
 let ultimoTiempo = 120;

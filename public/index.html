@@ -432,6 +432,10 @@ socket.on('actualizar', (estado) => {
             }
         }
 
+        // COPIA ESTO: Nueva función para conectar el botón con el servidor
+        function deshacerAccion() {
+            socket.emit('deshacerUltimaAccion');
+        }
         function reiniciarTodo() { socket.emit('reiniciarTodo'); }
         function decidirEmpate(ganadorCompetidor) {
         socket.emit('resolverEmpateRound', { ganador: ganadorCompetidor });

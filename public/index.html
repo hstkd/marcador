@@ -249,14 +249,19 @@
     </div>
     <script>
         const socket = io();
-// --- NUEVA FUNCIÓN PARA GENERAR SONIDOS ELECTRÓNICOS ---
+        // =================================================================
+// 1. REPARACIÓN DEL AUDIO: Crear el contexto UNA SOLA VEZ afuera
+// =================================================================
+let audioCtx = null;
+
 function emitirPitido(frecuencia, duracion, vol = 0.3) {
     try {
-        // Creamos o recuperamos el contexto de audio
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        // Solo lo creamos la primera vez que se necesita, y lo reutilizamos
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
         
-        // --- EL ARREGLO CLAVE ---
-        // Si el navegador congeló el audio en modo "suspended", lo despertamos a la fuerza
+        // Lo despertamos si está dormido
         if (audioCtx.state === 'suspended') {
             audioCtx.resume();
         }
@@ -266,8 +271,6 @@ function emitirPitido(frecuencia, duracion, vol = 0.3) {
         
         oscillator.type = 'sine';
         oscillator.frequency.setValueAtTime(frecuencia, audioCtx.currentTime);
-        
-        // Volumen modificado (0.4 para los 5 seg, 1.0 para el final)
         gainNode.gain.setValueAtTime(vol, audioCtx.currentTime); 
         
         oscillator.connect(gainNode);
@@ -279,7 +282,7 @@ function emitirPitido(frecuencia, duracion, vol = 0.3) {
         console.log("Error en el sistema de audio:", e);
     }
 }
-
+// =================================================================
             // Guarda estas variables fuera del socket.on para llevar el control del último estado
 
 let ultimoTiempo = 120;
@@ -290,25 +293,30 @@ socket.on('actualizar', (estado) => {
     let segs = estado.tiempoRestante % 60;
     document.getElementById('tiempo').innerText = (mins < 10 ? "0" : "") + mins + ":" + (segs < 10 ? "0" : "") + segs;
 
-    // --- NUEVO: DETECCIÓN DE SONIDOS ---
+    // =================================================================
+    // 2. DETECCIÓN DE SONIDOS CON SALVAVIDAS
+    // =================================================================
     if (estado.tiempoRestante !== ultimoTiempo) {
         
-        // Solo permitimos los pitidos de cuenta regresiva si el tiempo avanza
-        if (estado.corriendo) {
-            // Cuenta regresiva: 5, 4, 3, 2, 1 segundos restantes
-            if (estado.tiempoRestante <= 5 && estado.tiempoRestante > 0) {
-                emitirPitido(880, 0.15, 0.4); 
-            }
+        // Cuenta regresiva 5 al 1
+        if (estado.corriendo && estado.tiempoRestante <= 5 && estado.tiempoRestante > 0) {
+            emitirPitido(880, 0.15, 0.4); 
         }
         
-        // ¡OJO AQUÍ! El final del round (0 segundos) DEBE sonar siempre, 
-        // incluso si el servidor detiene el reloj en ese mismo instante.
+        // Fin del Round (Si el 0 llega correctamente)
         if (estado.tiempoRestante === 0) {
-            emitirPitido(440, 1.5, 1.0); // Pitido de término (Volumen Máximo)
+            emitirPitido(440, 1.5, 1.0); 
         }
         
         ultimoTiempo = estado.tiempoRestante;
     }
+
+    // EL SALVAVIDAS: Si el reloj saltó directo al descanso y nunca mandó el 0
+    if (estado.enDescanso && document.getElementById('round').innerText !== "DESCANSO") {
+        emitirPitido(440, 1.5, 1.0); 
+    }
+    // =================================================================
+
 
     // Alerta de Gam-jeom (Sonido doble de advertencia si sube el contador)
     if (estado.gamjeomAzul > ultimoGamAzul || estado.gamjeomRojo > ultimoGamRojo) {

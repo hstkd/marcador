@@ -386,15 +386,17 @@ socket.on('actualizar', (estado) => {
                 function controlTiempo() { socket.emit('toggleTiempo'); }
         function sumarMesa(comp, cant) { socket.emit('modificarMesa', {competidor: comp, cantidad: cant}); }
         function gamjeom(comp) { socket.emit('gamjeomMesa', {competidor: comp}); }
-        
-        // --- NUEVA FUNCIÓN PARA RESTAR PUNTOS ---
+                // --- FUNCIÓN PARA RESTAR PUNTOS CON ESCUDO PROTECTOR ---
         function restarMesa(comp) { 
-            socket.emit('modificarMesa', {competidor: comp, cantidad: -1}); 
-        }
-
-        function reiniciarTodo() { socket.emit('reiniciarTodo'); }
-        function decidirEmpate(ganadorCompetidor) {
-            socket.emit('resolverEmpateRound', { ganador: ganadorCompetidor });
+            // 1. Buscamos cuántos puntos se muestran actualmente en la pantalla
+            const puntosActuales = parseInt(document.getElementById(`pts-${comp}`).innerText) || 0;
+            
+            // 2. Solo enviamos la resta si los puntos actuales son mayores a 0
+            if (puntosActuales > 0) {
+                socket.emit('modificarMesa', {competidor: comp, cantidad: -1}); 
+            } else {
+                console.log(`Acción bloqueada: ${comp} ya tiene 0 puntos.`);
+            }
         }
 
         function reiniciarTodo() { socket.emit('reiniciarTodo'); }

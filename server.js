@@ -24,6 +24,9 @@ const VALOR_PUNTOS = { 'puno': 1, 'peto': 2, 'cabeza': 3 };
 // Registro para controlar la coincidencia oficial de jueces
 let marcasJueces = []; 
 
+//Historial para almacenar estados anteriores
+let historialAcciones = [];
+
 io.on('connection', (socket) => {
     socket.emit('actualizar', estado);
 
@@ -43,6 +46,7 @@ io.on('connection', (socket) => {
 
     socket.on('modificarMesa', (datos) => {
         if (estado.corriendo || estado.ganadorCombate || estado.ganadorRound === 'empate') return;
+        guardarEstadoEnHistorial();
         if (datos.competidor === 'azul') estado.puntosAzul += datos.cantidad;
         else estado.puntosRojo += datos.cantidad;
         revisarReglasDeVictoria();
@@ -51,6 +55,7 @@ io.on('connection', (socket) => {
 
     socket.on('gamjeomMesa', (datos) => {
         if (estado.corriendo || estado.ganadorCombate || estado.ganadorRound === 'empate') return;
+        guardarEstadoEnHistorial();
         if (datos.competidor === 'azul') {
             estado.gamjeomAzul++; estado.puntosRojo += 1;
         } else {
@@ -112,6 +117,7 @@ io.on('connection', (socket) => {
 
             if (coincidencias.length >= 2) {
                 let puntosASumar = VALOR_PUNTOS[tecnica];
+                guardarEstadoEnHistorial();
                 if (competidor === 'azul') estado.puntosAzul += puntosASumar;
                 else estado.puntosRojo += puntosASumar;
 
@@ -121,6 +127,20 @@ io.on('connection', (socket) => {
             }
         }
     });
+
+        // Escuchador para el botón UNDO de la mesa
+    socket.on('deshacerUltimaAccion', () => {
+        if (historialAcciones.length > 0) {
+            // Sacamos el último estado guardado y reemplazamos el actual
+            estado = historialAcciones.pop();
+            console.log("[MESA] UNDO ejecutado con éxito.");
+            io.emit('actualizar', estado);
+        } else {
+            console.log("[MESA] No hay acciones en el historial para deshacer.");
+        }
+    });
+
+    socket.on('reiniciarTodo', () => {
 
     socket.on('reiniciarTodo', () => {
         reiniciarCombate();
@@ -193,6 +213,7 @@ function finalizarDescanso() {
 }
 
 function reiniciarCombate() {
+    historialAcciones = [];
     estado.puntosAzul = 0; estado.puntosRojo = 0;
     estado.gamjeomAzul = 0; estado.gamjeomRojo = 0;
     estado.roundsAzul = 0; estado.roundsRojo = 0;
@@ -200,6 +221,13 @@ function reiniciarCombate() {
     estado.enDescanso = false; estado.corriendo = false;
     estado.ganadorRound = null; estado.ganadorCombate = null;
     estado.tiempoRestante = estado.tiempoConfiguradoRound;
+}
+
+function guardarEstadoEnHistorial() {
+    // Clonamos el estado actual para que no se modifique por referencia
+    historialAcciones.push(JSON.parse(JSON.stringify(estado)));
+    // Si el historial es muy largo, borramos el más antiguo
+    if (historialAcciones.length > 20) historialAcciones.shift();
 }
 
 const PORT = process.env.PORT || 3000;
